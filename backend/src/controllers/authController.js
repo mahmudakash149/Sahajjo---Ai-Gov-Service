@@ -126,24 +126,13 @@ async function deleteAccount(req, res, next) {
   }
 }
 
+// In-memory OTP storage fallback if MySQL otp_codes table is not created
+const inMemoryOtps = new Map();
+
 // OTP verification for passwordless login
 async function sendOtp(req, res, next) {
   try {
     const { phone } = req.body;
-
-    // Auto-ensure otp_codes table exists
-    await pool.execute(`
-      CREATE TABLE IF NOT EXISTS otp_codes (
-        id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
-        phone VARCHAR(15) NOT NULL,
-        otp_hash VARCHAR(255) NOT NULL,
-        expires_at DATETIME NOT NULL,
-        consumed BOOLEAN NOT NULL DEFAULT FALSE,
-        created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-        PRIMARY KEY (id),
-        INDEX idx_otp_phone_active (phone, consumed, expires_at)
-      ) ENGINE=InnoDB;
-    `);
 
     // Verify user exists with this phone
     const [users] = await pool.execute('SELECT id, full_name, phone FROM users WHERE phone = ?', [phone]);
@@ -153,26 +142,41 @@ async function sendOtp(req, res, next) {
       });
     }
 
-    // Rate-limiting: prevent spamming OTPs within 60 seconds
-    const [recent] = await pool.execute(
-      'SELECT id FROM otp_codes WHERE phone = ? AND created_at > DATE_SUB(UTC_TIMESTAMP(), INTERVAL 60 SECOND) LIMIT 1',
-      [phone]
-    );
-    if (recent.length) {
-      return res.status(429).json({
-        message: 'Please wait a minute before requesting another OTP code.',
-      });
-    }
-
     // Generate 6-digit random code
     const code = Math.floor(100000 + Math.random() * 900000).toString();
     const otpHashed = await bcrypt.hash(code, 10);
 
-    // Save with 5-minute validity window
-    await pool.execute(
-      'INSERT INTO otp_codes (phone, otp_hash, expires_at) VALUES (?, ?, DATE_ADD(UTC_TIMESTAMP(), INTERVAL 5 MINUTE))',
-      [phone, otpHashed]
-    );
+    // Attempt saving to DB with fallback to memory
+    let savedInDb = false;
+    try {
+      const [recent] = await pool.execute(
+        'SELECT id FROM otp_codes WHERE phone = ? AND created_at > DATE_SUB(UTC_TIMESTAMP(), INTERVAL 60 SECOND) LIMIT 1',
+        [phone]
+      );
+      if (recent.length) {
+        return res.status(429).json({
+          message: 'Please wait a minute before requesting another OTP code.',
+        });
+      }
+      await pool.execute(
+        'INSERT INTO otp_codes (phone, otp_hash, expires_at) VALUES (?, ?, DATE_ADD(UTC_TIMESTAMP(), INTERVAL 5 MINUTE))',
+        [phone, otpHashed]
+      );
+      savedInDb = true;
+    } catch (_dbErr) {
+      const existing = inMemoryOtps.get(phone);
+      if (existing && Date.now() - existing.createdAt < 60 * 1000) {
+        return res.status(429).json({
+          message: 'Please wait a minute before requesting another OTP code.',
+        });
+      }
+      inMemoryOtps.set(phone, {
+        otpHashed,
+        expiresAt: Date.now() + 5 * 60 * 1000,
+        createdAt: Date.now(),
+        consumed: false,
+      });
+    }
 
     // Output to server terminal for development/testing
     console.log(`\n==================================================`);
@@ -194,27 +198,42 @@ async function sendOtp(req, res, next) {
 async function verifyOtp(req, res, next) {
   try {
     const { phone, otp } = req.body;
+    let verified = false;
 
-    const [rows] = await pool.execute(
-      'SELECT * FROM otp_codes WHERE phone = ? AND consumed = FALSE AND expires_at > UTC_TIMESTAMP() ORDER BY id DESC LIMIT 1',
-      [phone]
-    );
-
-    if (!rows.length) {
-      return res.status(400).json({
-        message: 'OTP has expired or is invalid. Please request a new one.',
-      });
+    try {
+      const [rows] = await pool.execute(
+        'SELECT * FROM otp_codes WHERE phone = ? AND consumed = FALSE AND expires_at > UTC_TIMESTAMP() ORDER BY id DESC LIMIT 1',
+        [phone]
+      );
+      if (rows.length) {
+        const valid = await bcrypt.compare(otp, rows[0].otp_hash);
+        if (!valid) {
+          return res.status(401).json({
+            message: 'Invalid OTP code. Please check and try again.',
+          });
+        }
+        await pool.execute('UPDATE otp_codes SET consumed = TRUE WHERE id = ?', [rows[0].id]);
+        verified = true;
+      }
+    } catch (_dbErr) {
+      // DB table not available; proceed to in-memory check
     }
 
-    const valid = await bcrypt.compare(otp, rows[0].otp_hash);
-    if (!valid) {
-      return res.status(401).json({
-        message: 'Invalid OTP code. Please check and try again.',
-      });
+    if (!verified) {
+      const mem = inMemoryOtps.get(phone);
+      if (!mem || mem.consumed || Date.now() > mem.expiresAt) {
+        return res.status(400).json({
+          message: 'OTP has expired or is invalid. Please request a new one.',
+        });
+      }
+      const valid = await bcrypt.compare(otp, mem.otpHashed);
+      if (!valid) {
+        return res.status(401).json({
+          message: 'Invalid OTP code. Please check and try again.',
+        });
+      }
+      mem.consumed = true;
     }
-
-    // Mark OTP consumed
-    await pool.execute('UPDATE otp_codes SET consumed = TRUE WHERE id = ?', [rows[0].id]);
 
     // Fetch user and log them in
     const [userRows] = await pool.execute('SELECT * FROM users WHERE phone = ?', [phone]);
