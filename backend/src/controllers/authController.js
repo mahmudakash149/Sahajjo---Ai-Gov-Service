@@ -116,6 +116,16 @@ async function me(req, res, next) {
   }
 }
 
+// FR-03: complete deletion control for the citizen.
+async function deleteAccount(req, res, next) {
+  try {
+    await pool.execute('DELETE FROM users WHERE id = ?', [req.user.id]);
+    return res.status(204).send();
+  } catch (err) {
+    return next(err);
+  }
+}
+
 // OTP verification for passwordless login
 async function sendOtp(req, res, next) {
   try {
