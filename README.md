@@ -1,4 +1,3 @@
-HEAD
 # Sahajjo — Phase 1: Authentication Module
 
 Stack (from the SRS): **Flutter (Android, Dart)** → **Node.js + Express** → **MySQL**.
@@ -28,16 +27,7 @@ npm start                # http://localhost:4000/health
 
 ## 3. Flutter app
 ```bash
-flutter create --org com.sahajjo --platforms android sahajjo_app
-cd sahajjo_app
-# replace its pubspec.yaml and lib/ with frontend/pubspec.yaml and frontend/lib/
-```
-In `android/app/src/main/AndroidManifest.xml`:
-- add `<uses-permission android:name="android.permission.INTERNET"/>` above `<application>`
-- for local HTTP testing only, add `android:usesCleartextTraffic="true"` to `<application>` (use HTTPS in production)
-- set `minSdkVersion 23` in `android/app/build.gradle` (required by flutter_secure_storage)
-
-```bash
+cd frontend
 flutter pub get
 flutter run --dart-define=API_BASE_URL=http://10.0.2.2:4000/api   # emulator
 ```
@@ -53,4 +43,3 @@ For a physical phone use your computer's LAN IP instead of `10.0.2.2`.
 
 # Sahajjo---Ai-Gov-Service
 This is an Ai integrated app with helps Bangladesh citizens to complete goverment  services with easy guidelines.
- c58d277b9e66e454d016a686d908e9b2e8057872

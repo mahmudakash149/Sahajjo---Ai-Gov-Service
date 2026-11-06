@@ -4,7 +4,7 @@ class S {
 
   String _t(String bn, String en) => lang == 'bn' ? bn : en;
 
-  String get appName => _t('সহজ', 'Sahajjo');
+  String get appName => _t('সাহায্য', 'Sahajjo');
   String get tagline => _t('সরকারি সেবা, সহজ নির্দেশনা', 'Government services, made simple');
   String get login => _t('লগইন', 'Login');
   String get register => _t('নিবন্ধন করুন', 'Register');
