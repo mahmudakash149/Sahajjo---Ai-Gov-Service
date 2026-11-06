@@ -57,6 +57,12 @@ class AuthProvider extends ChangeNotifier {
   Future<void> login(String identifier, String password) async =>
       _startSession(await _api.login(identifier.trim(), password));
 
+  Future<Map<String, dynamic>> sendOtp(String phone) async =>
+      await _api.sendOtp(phone.trim());
+
+  Future<void> loginWithOtp(String phone, String otp) async =>
+      _startSession(await _api.verifyOtp(phone.trim(), otp.trim()));
+
   Future<void> register({
     required String fullName,
     required String phone,

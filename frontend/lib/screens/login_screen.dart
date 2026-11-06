@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import '../providers/auth_provider.dart';
 import '../services/api_service.dart';
 import 'register_screen.dart';
+import 'otp_login_screen.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -95,22 +96,6 @@ class _LoginScreenState extends State<LoginScreen> {
             ),
           ),
         ],
-      ),
-    );
-  }
-
-  void _showOtpNotice() {
-    final auth = context.read<AuthProvider>();
-    final isBn = auth.lang == 'bn';
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(
-          isBn
-              ? 'ওটিপি লগইন সুবিধা পরবর্তী আপডেটে সংযুক্ত করা হবে'
-              : 'Login with OTP will be available in the next update',
-        ),
-        duration: const Duration(seconds: 3),
-        behavior: SnackBarBehavior.floating,
       ),
     );
   }
@@ -510,7 +495,12 @@ class _LoginScreenState extends State<LoginScreen> {
                       width: double.infinity,
                       height: 52,
                       child: OutlinedButton(
-                        onPressed: _showOtpNotice,
+                        onPressed: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(builder: (_) => const OtpLoginScreen()),
+                          );
+                        },
                         style: OutlinedButton.styleFrom(
                           side: const BorderSide(color: primaryColor, width: 1.5),
                           shape: RoundedRectangleBorder(

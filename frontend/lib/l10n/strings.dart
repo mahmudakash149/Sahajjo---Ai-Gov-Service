@@ -59,4 +59,16 @@ class S {
   String get pwReqLower => _t('অন্তত ১টি ছোট হাতের অক্ষর (a-z)', 'At least one lowercase letter (a-z)');
   String get pwReqDigit => _t('অন্তত ১টি সংখ্যা (০-৯)', 'At least one number (0-9)');
   String get pwReqSpecial => _t(r'অন্তত ১টি বিশেষ চিহ্ন (!@#$%^&*)', r'At least one special character (!@#$%^&*)');
+
+  // OTP Login Strings
+  String get otpTitle => _t('ওটিপি যাচাইকরণ', 'OTP Verification');
+  String get otpSubtitle => _t('নিরাপদ কোড দিয়ে সরাসরি সাইন ইন করুন', 'Sign in securely with a one-time code');
+  String get enterOtp => _t('৬-সংখ্যার ওটিপি কোড দিন', 'Enter 6-digit OTP code');
+  String get otpSentTo => _t('এই নম্বরে ওটিপি পাঠানো হয়েছে:', 'Code has been sent to:');
+  String get sendOtp => _t('ওটিপি পাঠান', 'Send OTP');
+  String get verifyAndLogin => _t('যাচাই করুন ও লগইন করুন', 'Verify & Login');
+  String get resendOtp => _t('পুনরায় কোড পাঠান', 'Resend code');
+  String get resendIn => _t('পুনরায় পাঠানো যাবে:', 'Resend in:');
+  String get changePhone => _t('নম্বর পরিবর্তন', 'Change number');
+  String get demoNotice => _t('ডেমো ওটিপি কোড (স্বয়ংক্রিয় পূরণ করতে চাপুন):', 'Demo OTP Code (Tap to autofill):');
 }

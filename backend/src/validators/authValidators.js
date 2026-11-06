@@ -53,6 +53,24 @@ const loginRules = [
     .isLength({ max: 72 }),
 ];
 
+const sendOtpRules = [
+  body('phone')
+    .isString().withMessage('Phone number is required')
+    .customSanitizer(normalizePhone)
+    .matches(BD_PHONE).withMessage('Enter a valid Bangladeshi mobile number (01XXXXXXXXX)'),
+];
+
+const verifyOtpRules = [
+  body('phone')
+    .isString().withMessage('Phone number is required')
+    .customSanitizer(normalizePhone)
+    .matches(BD_PHONE).withMessage('Enter a valid Bangladeshi mobile number (01XXXXXXXXX)'),
+  body('otp')
+    .isString().withMessage('OTP code is required')
+    .trim()
+    .matches(/^\d{6}$/).withMessage('Enter a valid 6-digit OTP code'),
+];
+
 function validate(req, res, next) {
   const result = validationResult(req);
   if (result.isEmpty()) return next();
@@ -63,4 +81,12 @@ function validate(req, res, next) {
   return res.status(422).json({ message: 'Validation failed', errors });
 }
 
-module.exports = { registerRules, loginRules, validate, normalizePhone, BD_PHONE };
+module.exports = {
+  registerRules,
+  loginRules,
+  sendOtpRules,
+  verifyOtpRules,
+  validate,
+  normalizePhone,
+  BD_PHONE,
+};

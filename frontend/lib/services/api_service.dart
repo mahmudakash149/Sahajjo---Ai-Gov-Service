@@ -48,6 +48,20 @@ class ApiService {
             body: jsonEncode({'identifier': identifier, 'password': password}),
           ));
 
+  Future<Map<String, dynamic>> sendOtp(String phone) =>
+      _send(() => http.post(
+            _u('/auth/otp/send'),
+            headers: _json,
+            body: jsonEncode({'phone': phone}),
+          ));
+
+  Future<Map<String, dynamic>> verifyOtp(String phone, String otp) =>
+      _send(() => http.post(
+            _u('/auth/otp/verify'),
+            headers: _json,
+            body: jsonEncode({'phone': phone, 'otp': otp}),
+          ));
+
   Future<Map<String, dynamic>> me(String token) =>
       _send(() => http.get(_u('/auth/me'), headers: {'Authorization': 'Bearer $token'}));
 
