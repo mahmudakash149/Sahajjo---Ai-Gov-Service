@@ -12,7 +12,8 @@ const passwordRules = body('password')
   .isLength({ min: 8, max: 72 }).withMessage('Password must be 8-72 characters')
   .matches(/[a-z]/).withMessage('Password needs a lowercase letter')
   .matches(/[A-Z]/).withMessage('Password needs an uppercase letter')
-  .matches(/\d/).withMessage('Password needs a digit');
+  .matches(/\d/).withMessage('Password needs a digit')
+  .matches(/[^A-Za-z0-9]/).withMessage('Password needs a special character');
 
 const registerRules = [
   body('fullName')

@@ -36,9 +36,18 @@ class S {
   String get badEmail => _t('সঠিক ইমেইল দিন', 'Enter a valid email');
   String get reqField => _t('এই ঘরটি পূরণ করুন', 'This field is required');
   String get pwLength => _t('পাসওয়ার্ড ৮-৭২ অক্ষরের হতে হবে', 'Password must be 8-72 characters');
-  String get pwLower => _t('একটি ছোট হাতের অক্ষর দিন', 'Include a lowercase letter');
-  String get pwUpper => _t('একটি বড় হাতের অক্ষর দিন', 'Include an uppercase letter');
-  String get pwDigit => _t('একটি সংখ্যা দিন', 'Include a digit');
+  String get pwLower => _t('একটি ছোট হাতের অক্ষর দিন (a-z)', 'Include a lowercase letter (a-z)');
+  String get pwUpper => _t('একটি বড় হাতের অক্ষর দিন (A-Z)', 'Include an uppercase letter (A-Z)');
+  String get pwDigit => _t('একটি সংখ্যা দিন (0-9)', 'Include a digit (0-9)');
+  String get pwSpecial => _t(r'একটি বিশেষ চিহ্ন দিন (!@#$%^&*)', r'Include a special character (!@#$%^&*)');
   String get pwMismatch => _t('পাসওয়ার্ড মিলছে না', 'Passwords do not match');
   String get reqConsent => _t('নিবন্ধনের জন্য সম্মতি আবশ্যক', 'Consent is required to register');
+
+  // Password Checklist
+  String get pwReqTitle => _t('পাসওয়ার্ডের প্রয়োজনীয় শর্তসমূহ:', 'Password requirements:');
+  String get pwReqLength => _t('কমপক্ষে ৮টি অক্ষর', 'At least 8 characters');
+  String get pwReqUpper => _t('অন্তত ১টি বড় হাতের অক্ষর (A-Z)', 'At least one uppercase letter (A-Z)');
+  String get pwReqLower => _t('অন্তত ১টি ছোট হাতের অক্ষর (a-z)', 'At least one lowercase letter (a-z)');
+  String get pwReqDigit => _t('অন্তত ১টি সংখ্যা (০-৯)', 'At least one number (0-9)');
+  String get pwReqSpecial => _t(r'অন্তত ১টি বিশেষ চিহ্ন (!@#$%^&*)', r'At least one special character (!@#$%^&*)');
 }
