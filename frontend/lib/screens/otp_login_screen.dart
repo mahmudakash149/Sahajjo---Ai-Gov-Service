@@ -71,10 +71,14 @@ class _OtpLoginScreenState extends State<OtpLoginScreen> {
       setState(() {
         if (e.message == 'network') {
           _error = auth.s.networkError;
-        } else if (e.status == 404) {
+        } else if (e.status == 404 && e.message.contains('No account')) {
           _error = auth.lang == 'bn'
               ? 'এই নম্বরে কোনো অ্যাকাউন্ট নেই। অনুগ্রহ করে প্রথমে নিবন্ধন করুন।'
               : 'No account registered with this phone number. Please register first.';
+        } else if (e.status == 404) {
+          _error = auth.lang == 'bn'
+              ? 'সার্ভারে ওটিপি সার্ভিস চালু নেই। অনুগ্রহ করে ব্যাকএন্ড রিস্টার্ট করুন।'
+              : 'OTP endpoint not found. Please restart your backend server.';
         } else {
           _error = e.message;
         }
