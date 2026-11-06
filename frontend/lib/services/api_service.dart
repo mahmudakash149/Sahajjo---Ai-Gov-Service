@@ -51,6 +51,11 @@ class ApiService {
   Future<Map<String, dynamic>> me(String token) =>
       _send(() => http.get(_u('/auth/me'), headers: {'Authorization': 'Bearer $token'}));
 
+  Future<Map<String, dynamic>> services(String token, String query) => _send(() => http.get(
+        _u('/services').replace(queryParameters: {if (query.isNotEmpty) 'q': query}),
+        headers: {'Authorization': 'Bearer $token'},
+      ));
+
   Future<void> deleteAccount(String token) async {
     await _send(() => http.delete(_u('/auth/me'), headers: {'Authorization': 'Bearer $token'}));
   }

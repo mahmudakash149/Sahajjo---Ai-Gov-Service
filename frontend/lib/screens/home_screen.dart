@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/auth_provider.dart';
 import '../services/api_service.dart';
+import 'catalog_screen.dart';
 
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
@@ -54,18 +55,17 @@ class HomeScreen extends StatelessWidget {
           ),
         ],
       ),
-      body: Center(
-        child: Padding(
-          padding: const EdgeInsets.all(24),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text('${s.welcome}, $name', style: Theme.of(context).textTheme.headlineSmall, textAlign: TextAlign.center),
-              const SizedBox(height: 12),
-              Text(s.homePlaceholder, textAlign: TextAlign.center),
-            ],
+      body: Column(
+        children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+            child: Align(
+              alignment: Alignment.centerLeft,
+              child: Text('${s.welcome}, $name', style: Theme.of(context).textTheme.titleMedium),
+            ),
           ),
-        ),
+          const Expanded(child: CatalogScreen()),
+        ],
       ),
     );
   }

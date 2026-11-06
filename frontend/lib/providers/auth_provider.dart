@@ -75,6 +75,13 @@ class AuthProvider extends ChangeNotifier {
         consent: consent,
       ));
 
+  /// FR3: load the service catalog (optionally filtered by a search text).
+  Future<List<Map<String, dynamic>>> fetchServices(String query) async {
+    if (_token == null) return [];
+    final res = await _api.services(_token!, query);
+    return (res['services'] as List).map((e) => Map<String, dynamic>.from(e)).toList();
+  }
+
   Future<void> logout() async {
     await _storage.delete(key: _tokenKey);
     _token = null;

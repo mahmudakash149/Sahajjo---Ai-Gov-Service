@@ -4,7 +4,7 @@ class S {
 
   String _t(String bn, String en) => lang == 'bn' ? bn : en;
 
-  String get appName => _t('সাহায্য', 'Sahajjo');
+  String get appName => _t('সহজ', 'Sahajjo');
   String get tagline => _t('সরকারি সেবা, সহজ নির্দেশনা', 'Government services, made simple');
   String get login => _t('লগইন', 'Login');
   String get register => _t('নিবন্ধন করুন', 'Register');
@@ -29,6 +29,15 @@ class S {
   String get language => _t('ভাষা', 'Language');
   String get networkError => _t('সার্ভারের সাথে সংযোগ করা যায়নি।', 'Could not reach the server.');
   String get homePlaceholder => _t('সেবা তালিকা পরবর্তী ধাপে যুক্ত হবে।', 'Service catalog arrives in the next phase.');
+
+  // Service catalog (FR3)
+  String get services => _t('সেবা তালিকা', 'Service Catalog');
+  String get searchHint => _t('সেবা খুঁজুন…', 'Search services…');
+  String get noServices => _t('কোনো সেবা পাওয়া যায়নি।', 'No services found.');
+  String get retry => _t('আবার চেষ্টা করুন', 'Try again');
+  String get priorityService => _t('অগ্রাধিকার সেবা', 'Priority service');
+  String get category => _t('বিভাগ', 'Category');
+  String get close => _t('বন্ধ করুন', 'Close');
 
   // Validation
   String get reqName => _t('নাম লিখুন (কমপক্ষে ২ অক্ষর)', 'Enter your name (min 2 characters)');
