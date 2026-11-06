@@ -1,3 +1,4 @@
+HEAD
 # Sahajjo — Phase 1: Authentication Module
 
 Stack (from the SRS): **Flutter (Android, Dart)** → **Node.js + Express** → **MySQL**.
@@ -49,3 +50,7 @@ For a physical phone use your computer's LAN IP instead of `10.0.2.2`.
 - Rate limiting on auth routes + account lockout (5 failures → 15 min).
 - JWT (HS256, 1h) stored on device in Android Keystore-backed secure storage.
 - Privacy (FR-03): minimal data, explicit consent timestamp stored, self-service deletion.
+
+# Sahajjo---Ai-Gov-Service
+This is an Ai integrated app with helps Bangladesh citizens to complete goverment  services with easy guidelines.
+ c58d277b9e66e454d016a686d908e9b2e8057872
