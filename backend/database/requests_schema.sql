@@ -1,4 +1,4 @@
--- Sahajjo FR4: Service Request Input Schema
+-- Sahajjo FR4: Service Request Input & AI Diagnosis Schema
 -- Run once (safe to rerun): mysql -u root -p sahajjo < backend/database/requests_schema.sql
 
 USE sahajjo;
@@ -9,6 +9,7 @@ CREATE TABLE IF NOT EXISTS service_requests (
   request_text TEXT            NOT NULL,
   language     ENUM('bn','en') NOT NULL DEFAULT 'bn',
   status       ENUM('submitted','under_review','processed') NOT NULL DEFAULT 'submitted',
+  ai_diagnosis JSON            NULL,
   created_at   TIMESTAMP       NOT NULL DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (id),
   KEY idx_requests_user (user_id),
