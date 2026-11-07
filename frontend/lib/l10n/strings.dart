@@ -58,8 +58,17 @@ class S {
   String get noRequestsYet => _t('এখনো কোনো অনুরোধ জমা দেওয়া হয়নি। উপরের বক্সে লিখে অনুরোধ পাঠান।', 'No requests submitted yet. Type above and submit.');
   String get statusSubmitted => _t('জমা হয়েছে', 'Submitted');
   String get statusUnderReview => _t('পর্যালোচনাধীন', 'Under Review');
-  String get statusProcessed => _t('প্রক্রিয়াজাত', 'Processed');
+  String get statusProcessed => _t('এআই বিশ্লেষিত', 'AI Analyzed');
   String get reqTextMinError => _t('অনুরোধের বিবরণ অন্তত ৩ অক্ষরের হতে হবে', 'Request description must be at least 3 characters');
+
+  // AI Service Identification & Guidelines
+  String get aiDiagnosisTitle => _t('এআই সেবা শনাক্তকরণ ও নির্দেশনা', 'AI Service Identification & Guide');
+  String get identifiedService => _t('চিহ্নিত সরকারি সেবা:', 'Identified Government Service:');
+  String get matchConfidence => _t('মিল', 'match');
+  String get requiredDocs => _t('প্রয়োজনীয় কাগজপত্র:', 'Required Documents:');
+  String get stepsTitle => _t('পরবর্তী করণীয় ধাপসমূহ:', 'Step-by-Step Procedure:');
+  String get aiPoweredBadge => _t('সহায় জেমিনাই এআই দ্বারা বিশ্লেষিত', 'Analyzed by Sahajjo Gemini AI');
+  String get tapToViewGuidance => _t('এআই নির্দেশনা দেখতে ট্যাপ করুন', 'Tap to view AI guidance');
 
   // Validation
   String get reqName => _t('নাম লিখুন (কমপক্ষে ২ অক্ষর)', 'Enter your name (min 2 characters)');
