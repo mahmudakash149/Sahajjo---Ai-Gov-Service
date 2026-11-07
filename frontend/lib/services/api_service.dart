@@ -70,6 +70,25 @@ class ApiService {
         headers: {'Authorization': 'Bearer $token'},
       ));
 
+  // FR4: Citizen Service Request
+  Future<Map<String, dynamic>> submitServiceRequest(String token, String requestText, {String? language}) =>
+      _send(() => http.post(
+            _u('/requests'),
+            headers: {..._json, 'Authorization': 'Bearer $token'},
+            body: jsonEncode({
+              'requestText': requestText,
+              if (language != null) 'language': language,
+            }),
+          ));
+
+  Future<List<Map<String, dynamic>>> getMyServiceRequests(String token) async {
+    final res = await _send(() => http.get(
+          _u('/requests/my'),
+          headers: {'Authorization': 'Bearer $token'},
+        ));
+    return (res['requests'] as List? ?? []).map((e) => Map<String, dynamic>.from(e)).toList();
+  }
+
   Future<void> deleteAccount(String token) async {
     await _send(() => http.delete(_u('/auth/me'), headers: {'Authorization': 'Bearer $token'}));
   }
@@ -83,16 +102,12 @@ class ApiService {
       if (body['errors'] is Map) {
         (body['errors'] as Map).forEach((k, v) => errs[k.toString()] = v.toString());
       }
-      throw ApiException(body['message']?.toString() ?? 'Request failed',
-          status: res.statusCode, fieldErrors: errs);
-    } on ApiException {
-      rethrow;
+      final msg = (body['message'] ?? 'Request failed (${res.statusCode})').toString();
+      throw ApiException(msg, status: res.statusCode, fieldErrors: errs);
     } on TimeoutException {
       throw ApiException('network');
     } on http.ClientException {
       throw ApiException('network');
-    } on FormatException {
-      throw ApiException('Unexpected server response');
     }
   }
 }

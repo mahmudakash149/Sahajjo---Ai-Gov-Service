@@ -88,6 +88,18 @@ class AuthProvider extends ChangeNotifier {
     return (res['services'] as List).map((e) => Map<String, dynamic>.from(e)).toList();
   }
 
+  /// FR4: Citizen Service Request submission
+  Future<Map<String, dynamic>> submitServiceRequest(String text) async {
+    if (_token == null) throw ApiException('Not authenticated');
+    return await _api.submitServiceRequest(_token!, text, language: _lang);
+  }
+
+  /// FR4: Load citizen's submitted requests
+  Future<List<Map<String, dynamic>>> fetchMyRequests() async {
+    if (_token == null) return [];
+    return await _api.getMyServiceRequests(_token!);
+  }
+
   Future<void> logout() async {
     await _storage.delete(key: _tokenKey);
     _token = null;
