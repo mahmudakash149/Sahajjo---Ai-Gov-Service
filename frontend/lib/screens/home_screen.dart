@@ -44,7 +44,7 @@ class _HomeScreenState extends State<HomeScreen> {
     final s = auth.s;
     final name = auth.user?['fullName'] ?? '';
 
-    final pages = const [
+    const pages = [
       RequestInputScreen(),
       CatalogScreen(),
     ];
@@ -106,7 +106,7 @@ class _HomeScreenState extends State<HomeScreen> {
       bottomNavigationBar: NavigationBar(
         selectedIndex: _currentIndex,
         onDestinationSelected: (idx) => setState(() => _currentIndex = idx),
-        indicatorColor: const Color(0xFF006A4E).withOpacity(0.15),
+        indicatorColor: const Color(0xFF006A4E).withValues(alpha: 0.15),
         destinations: [
           NavigationDestination(
             icon: const Icon(Icons.support_agent_outlined),
