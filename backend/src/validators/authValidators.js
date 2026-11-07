@@ -12,8 +12,7 @@ const passwordRules = body('password')
   .isLength({ min: 8, max: 72 }).withMessage('Password must be 8-72 characters')
   .matches(/[a-z]/).withMessage('Password needs a lowercase letter')
   .matches(/[A-Z]/).withMessage('Password needs an uppercase letter')
-  .matches(/\d/).withMessage('Password needs a digit')
-  .matches(/[^A-Za-z0-9]/).withMessage('Password needs a special character');
+  .matches(/\d/).withMessage('Password needs a digit');
 
 const registerRules = [
   body('fullName')
@@ -53,24 +52,6 @@ const loginRules = [
     .isLength({ max: 72 }),
 ];
 
-const sendOtpRules = [
-  body('phone')
-    .isString().withMessage('Phone number is required')
-    .customSanitizer(normalizePhone)
-    .matches(BD_PHONE).withMessage('Enter a valid Bangladeshi mobile number (01XXXXXXXXX)'),
-];
-
-const verifyOtpRules = [
-  body('phone')
-    .isString().withMessage('Phone number is required')
-    .customSanitizer(normalizePhone)
-    .matches(BD_PHONE).withMessage('Enter a valid Bangladeshi mobile number (01XXXXXXXXX)'),
-  body('otp')
-    .isString().withMessage('OTP code is required')
-    .trim()
-    .matches(/^\d{6}$/).withMessage('Enter a valid 6-digit OTP code'),
-];
-
 function validate(req, res, next) {
   const result = validationResult(req);
   if (result.isEmpty()) return next();
@@ -81,12 +62,4 @@ function validate(req, res, next) {
   return res.status(422).json({ message: 'Validation failed', errors });
 }
 
-module.exports = {
-  registerRules,
-  loginRules,
-  sendOtpRules,
-  verifyOtpRules,
-  validate,
-  normalizePhone,
-  BD_PHONE,
-};
+module.exports = { registerRules, loginRules, validate, normalizePhone, BD_PHONE };

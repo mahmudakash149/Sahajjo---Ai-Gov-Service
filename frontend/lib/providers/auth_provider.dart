@@ -57,12 +57,6 @@ class AuthProvider extends ChangeNotifier {
   Future<void> login(String identifier, String password) async =>
       _startSession(await _api.login(identifier.trim(), password));
 
-  Future<Map<String, dynamic>> sendOtp(String phone) async =>
-      await _api.sendOtp(phone.trim());
-
-  Future<void> loginWithOtp(String phone, String otp) async =>
-      _startSession(await _api.verifyOtp(phone.trim(), otp.trim()));
-
   Future<void> register({
     required String fullName,
     required String phone,
@@ -80,25 +74,6 @@ class AuthProvider extends ChangeNotifier {
         preferredLanguage: _lang,
         consent: consent,
       ));
-
-  /// FR3: load the service catalog (optionally filtered by a search text).
-  Future<List<Map<String, dynamic>>> fetchServices(String query) async {
-    if (_token == null) return [];
-    final res = await _api.services(_token!, query);
-    return (res['services'] as List).map((e) => Map<String, dynamic>.from(e)).toList();
-  }
-
-  /// FR4: Citizen Service Request submission
-  Future<Map<String, dynamic>> submitServiceRequest(String text) async {
-    if (_token == null) throw ApiException('Not authenticated');
-    return await _api.submitServiceRequest(_token!, text, language: _lang);
-  }
-
-  /// FR4: Load citizen's submitted requests
-  Future<List<Map<String, dynamic>>> fetchMyRequests() async {
-    if (_token == null) return [];
-    return await _api.getMyServiceRequests(_token!);
-  }
 
   Future<void> logout() async {
     await _storage.delete(key: _tokenKey);

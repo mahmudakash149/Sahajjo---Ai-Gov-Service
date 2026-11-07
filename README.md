@@ -27,7 +27,16 @@ npm start                # http://localhost:4000/health
 
 ## 3. Flutter app
 ```bash
-cd frontend
+flutter create --org com.sahajjo --platforms android sahajjo_app
+cd sahajjo_app
+# replace its pubspec.yaml and lib/ with frontend/pubspec.yaml and frontend/lib/
+```
+In `android/app/src/main/AndroidManifest.xml`:
+- add `<uses-permission android:name="android.permission.INTERNET"/>` above `<application>`
+- for local HTTP testing only, add `android:usesCleartextTraffic="true"` to `<application>` (use HTTPS in production)
+- set `minSdkVersion 23` in `android/app/build.gradle` (required by flutter_secure_storage)
+
+```bash
 flutter pub get
 flutter run --dart-define=API_BASE_URL=http://10.0.2.2:4000/api   # emulator
 ```
@@ -40,6 +49,3 @@ For a physical phone use your computer's LAN IP instead of `10.0.2.2`.
 - Rate limiting on auth routes + account lockout (5 failures → 15 min).
 - JWT (HS256, 1h) stored on device in Android Keystore-backed secure storage.
 - Privacy (FR-03): minimal data, explicit consent timestamp stored, self-service deletion.
-
-# Sahajjo---Ai-Gov-Service
-This is an Ai integrated app with helps Bangladesh citizens to complete goverment  services with easy guidelines.
