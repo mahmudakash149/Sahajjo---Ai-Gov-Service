@@ -71,6 +71,42 @@ const verifyOtpRules = [
     .matches(/^\d{6}$/).withMessage('Enter a valid 6-digit OTP code'),
 ];
 
+const verifyResetOtpRules = [
+  body('phone')
+    .isString().withMessage('Phone number is required')
+    .customSanitizer(normalizePhone)
+    .matches(BD_PHONE).withMessage('Enter a valid Bangladeshi mobile number (01XXXXXXXXX)'),
+  body('otp')
+    .isString().withMessage('OTP code is required')
+    .trim()
+    .matches(/^\d{6}$/).withMessage('Enter a valid 6-digit OTP code'),
+];
+
+const newPasswordRules = body('newPassword')
+  .isString().withMessage('New password is required')
+  .isLength({ min: 8, max: 72 }).withMessage('Password must be 8-72 characters')
+  .matches(/[a-z]/).withMessage('Password needs a lowercase letter')
+  .matches(/[A-Z]/).withMessage('Password needs an uppercase letter')
+  .matches(/\d/).withMessage('Password needs a digit')
+  .matches(/[^A-Za-z0-9]/).withMessage('Password needs a special character');
+
+const resetPasswordRules = [
+  body('phone')
+    .isString().withMessage('Phone number is required')
+    .customSanitizer(normalizePhone)
+    .matches(BD_PHONE).withMessage('Enter a valid Bangladeshi mobile number (01XXXXXXXXX)'),
+  body('resetToken')
+    .optional({ values: 'falsy' })
+    .isString(),
+  body('otp')
+    .optional({ values: 'falsy' })
+    .isString().trim(),
+  newPasswordRules,
+  body('confirmPassword')
+    .custom((v, { req }) => v === req.body.newPassword)
+    .withMessage('Passwords do not match'),
+];
+
 function validate(req, res, next) {
   const result = validationResult(req);
   if (result.isEmpty()) return next();
@@ -86,6 +122,8 @@ module.exports = {
   loginRules,
   sendOtpRules,
   verifyOtpRules,
+  verifyResetOtpRules,
+  resetPasswordRules,
   validate,
   normalizePhone,
   BD_PHONE,

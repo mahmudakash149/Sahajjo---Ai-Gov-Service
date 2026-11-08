@@ -129,7 +129,7 @@ async function deleteAccount(req, res, next) {
 // In-memory OTP storage fallback if MySQL otp_codes table is not created
 const inMemoryOtps = new Map();
 
-// OTP verification for passwordless login
+// OTP verification for passwordless login & password reset
 async function sendOtp(req, res, next) {
   try {
     const { phone } = req.body;
@@ -147,7 +147,6 @@ async function sendOtp(req, res, next) {
     const otpHashed = await bcrypt.hash(code, 10);
 
     // Attempt saving to DB with fallback to memory
-    let savedInDb = false;
     try {
       const [recent] = await pool.execute(
         'SELECT id FROM otp_codes WHERE phone = ? AND created_at > DATE_SUB(UTC_TIMESTAMP(), INTERVAL 60 SECOND) LIMIT 1',
@@ -162,7 +161,6 @@ async function sendOtp(req, res, next) {
         'INSERT INTO otp_codes (phone, otp_hash, expires_at) VALUES (?, ?, DATE_ADD(UTC_TIMESTAMP(), INTERVAL 5 MINUTE))',
         [phone, otpHashed]
       );
-      savedInDb = true;
     } catch (_dbErr) {
       const existing = inMemoryOtps.get(phone);
       if (existing && Date.now() - existing.createdAt < 60 * 1000) {
@@ -253,4 +251,150 @@ async function verifyOtp(req, res, next) {
   }
 }
 
-module.exports = { register, login, me, deleteAccount, sendOtp, verifyOtp };
+// Verify OTP specifically for Password Reset flow -> returns a 15-minute resetToken
+async function verifyResetOtp(req, res, next) {
+  try {
+    const { phone, otp } = req.body;
+
+    const [userRows] = await pool.execute('SELECT id, phone FROM users WHERE phone = ?', [phone]);
+    if (!userRows.length) {
+      return res.status(404).json({ message: 'No account registered with this phone number.' });
+    }
+
+    let verified = false;
+    try {
+      const [rows] = await pool.execute(
+        'SELECT * FROM otp_codes WHERE phone = ? AND consumed = FALSE AND expires_at > UTC_TIMESTAMP() ORDER BY id DESC LIMIT 1',
+        [phone]
+      );
+      if (rows.length) {
+        const valid = await bcrypt.compare(otp, rows[0].otp_hash);
+        if (!valid) {
+          return res.status(401).json({ message: 'Invalid OTP code. Please check and try again.' });
+        }
+        await pool.execute('UPDATE otp_codes SET consumed = TRUE WHERE id = ?', [rows[0].id]);
+        verified = true;
+      }
+    } catch (_dbErr) {
+      // Proceed to memory fallback
+    }
+
+    if (!verified) {
+      const mem = inMemoryOtps.get(phone);
+      if (!mem || mem.consumed || Date.now() > mem.expiresAt) {
+        return res.status(400).json({ message: 'OTP has expired or is invalid. Please request a new one.' });
+      }
+      const valid = await bcrypt.compare(otp, mem.otpHashed);
+      if (!valid) {
+        return res.status(401).json({ message: 'Invalid OTP code. Please check and try again.' });
+      }
+      mem.consumed = true;
+    }
+
+    // Generate secure resetToken
+    const resetToken = jwt.sign(
+      { phone, purpose: 'password_reset' },
+      config.jwt.secret,
+      { algorithm: 'HS256', expiresIn: '15m' }
+    );
+
+    return res.json({
+      message: 'OTP verified successfully. You can now set your new password.',
+      resetToken,
+    });
+  } catch (err) {
+    return next(err);
+  }
+}
+
+// Reset / Change Password and update database
+async function resetPassword(req, res, next) {
+  try {
+    const { phone, resetToken, otp, newPassword } = req.body;
+
+    // Check authorization: either a valid resetToken or a direct valid OTP
+    let authorized = false;
+
+    if (resetToken) {
+      try {
+        const decoded = jwt.verify(resetToken, config.jwt.secret, { algorithms: ['HS256'] });
+        if (decoded.phone === phone && decoded.purpose === 'password_reset') {
+          authorized = true;
+        }
+      } catch (_tokenErr) {
+        return res.status(401).json({
+          message: 'Password reset session has expired or is invalid. Please verify OTP again.',
+        });
+      }
+    }
+
+    if (!authorized && otp) {
+      // Direct OTP verification fallback
+      try {
+        const [rows] = await pool.execute(
+          'SELECT * FROM otp_codes WHERE phone = ? AND consumed = FALSE AND expires_at > UTC_TIMESTAMP() ORDER BY id DESC LIMIT 1',
+          [phone]
+        );
+        if (rows.length) {
+          const valid = await bcrypt.compare(otp, rows[0].otp_hash);
+          if (valid) {
+            await pool.execute('UPDATE otp_codes SET consumed = TRUE WHERE id = ?', [rows[0].id]);
+            authorized = true;
+          }
+        }
+      } catch (_dbErr) {}
+
+      if (!authorized) {
+        const mem = inMemoryOtps.get(phone);
+        if (mem && !mem.consumed && Date.now() <= mem.expiresAt) {
+          const valid = await bcrypt.compare(otp, mem.otpHashed);
+          if (valid) {
+            mem.consumed = true;
+            authorized = true;
+          }
+        }
+      }
+    }
+
+    if (!authorized) {
+      return res.status(401).json({
+        message: 'Unauthorized password reset attempt. Valid OTP or reset token is required.',
+      });
+    }
+
+    // Verify user exists
+    const [users] = await pool.execute('SELECT id, phone FROM users WHERE phone = ?', [phone]);
+    if (!users.length) {
+      return res.status(404).json({ message: 'User account not found.' });
+    }
+    const user = users[0];
+
+    // Hash the new password securely
+    const passwordHash = await bcrypt.hash(newPassword, config.bcryptRounds);
+
+    // Update database
+    await pool.execute(
+      `UPDATE users 
+       SET password_hash = ?, failed_login_attempts = 0, locked_until = NULL, updated_at = UTC_TIMESTAMP() 
+       WHERE id = ?`,
+      [passwordHash, user.id]
+    );
+
+    return res.json({
+      message: 'Password has been updated successfully. You can now log in with your new password.',
+    });
+  } catch (err) {
+    return next(err);
+  }
+}
+
+module.exports = {
+  register,
+  login,
+  me,
+  deleteAccount,
+  sendOtp,
+  verifyOtp,
+  verifyResetOtp,
+  resetPassword,
+};

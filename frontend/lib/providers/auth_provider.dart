@@ -63,6 +63,25 @@ class AuthProvider extends ChangeNotifier {
   Future<void> loginWithOtp(String phone, String otp) async =>
       _startSession(await _api.verifyOtp(phone.trim(), otp.trim()));
 
+  // Password Reset / Change Password flow
+  Future<Map<String, dynamic>> verifyResetOtp(String phone, String otp) async =>
+      await _api.verifyResetOtp(phone.trim(), otp.trim());
+
+  Future<Map<String, dynamic>> resetPassword({
+    required String phone,
+    String? resetToken,
+    String? otp,
+    required String newPassword,
+    required String confirmPassword,
+  }) async =>
+      await _api.resetPassword(
+        phone: phone.trim(),
+        resetToken: resetToken,
+        otp: otp?.trim(),
+        newPassword: newPassword,
+        confirmPassword: confirmPassword,
+      );
+
   Future<void> register({
     required String fullName,
     required String phone,

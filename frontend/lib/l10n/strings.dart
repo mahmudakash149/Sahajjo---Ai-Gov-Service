@@ -102,4 +102,23 @@ class S {
   String get resendIn => _t('পুনরায় পাঠানো যাবে:', 'Resend in:');
   String get changePhone => _t('নম্বর পরিবর্তন', 'Change number');
   String get demoNotice => _t('ডেমো ওটিপি কোড (স্বয়ংক্রিয় পূরণ করতে চাপুন):', 'Demo OTP Code (Tap to autofill):');
+
+  // Forgot / Change Password Strings
+  String get forgotPasswordTitle => _t('পাসওয়ার্ড পুনরুদ্ধার', 'Password Recovery');
+  String get changePassOption => _t('১. পাসওয়ার্ড পরিবর্তন (Change Password)', '1. Change Password');
+  String get changePassSubtitle => _t('ওটিপি যাচাই করে নতুন পাসওয়ার্ড দিন', 'Verify phone via OTP and set a new password');
+  String get loginWithOtpOption => _t('২. ওটিপি দিয়ে সরাসরি লগইন', '2. Direct Login with OTP');
+  String get loginWithOtpSubtitle => _t('পাসওয়ার্ড ছাড়া এককালীন কোড দিয়ে প্রবেশ করুন', 'Enter using a one-time SMS verification code');
+  String get enterRegisteredPhone => _t('নিবন্ধিত মোবাইল নম্বর দিন', 'Enter your registered mobile number');
+  String get resetPasswordHeader => _t('পাসওয়ার্ড রিসেট করুন', 'Reset Password');
+  String get resetPasswordSubheader => _t('আপনার অ্যাকাউন্টের পাসওয়ার্ড পরিবর্তন করতে ৩টি সহজ ধাপ সম্পন্ন করুন', 'Complete 3 simple steps to update your account password');
+  String get stepPhone => _t('মোবাইল নম্বর', 'Mobile Number');
+  String get stepOtp => _t('ওটিপি যাচাই', 'Verify OTP');
+  String get stepNewPw => _t('নতুন পাসওয়ার্ড', 'New Password');
+  String get newPassword => _t('নতুন পাসওয়ার্ড', 'New Password');
+  String get confirmNewPassword => _t('নতুন পাসওয়ার্ড নিশ্চিত করুন', 'Confirm New Password');
+  String get updatePassword => _t('পাসওয়ার্ড সংরক্ষণ করুন', 'Save New Password');
+  String get updatingPassword => _t('সংরক্ষণ করা হচ্ছে…', 'Saving…');
+  String get passwordChangedSuccess => _t('পাসওয়ার্ড সফলভাবে পরিবর্তন করা হয়েছে! নতুন পাসওয়ার্ড দিয়ে লগইন করুন।', 'Password has been updated successfully! Please log in with your new password.');
+  String get verifyOtpOnly => _t('ওটিপি যাচাই করুন', 'Verify OTP');
 }

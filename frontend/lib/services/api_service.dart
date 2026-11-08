@@ -62,6 +62,33 @@ class ApiService {
             body: jsonEncode({'phone': phone, 'otp': otp}),
           ));
 
+  // Password Reset / Change Password APIs
+  Future<Map<String, dynamic>> verifyResetOtp(String phone, String otp) =>
+      _send(() => http.post(
+            _u('/auth/reset-password/verify-otp'),
+            headers: _json,
+            body: jsonEncode({'phone': phone, 'otp': otp}),
+          ));
+
+  Future<Map<String, dynamic>> resetPassword({
+    required String phone,
+    String? resetToken,
+    String? otp,
+    required String newPassword,
+    required String confirmPassword,
+  }) =>
+      _send(() => http.post(
+            _u('/auth/reset-password'),
+            headers: _json,
+            body: jsonEncode({
+              'phone': phone,
+              if (resetToken != null) 'resetToken': resetToken,
+              if (otp != null) 'otp': otp,
+              'newPassword': newPassword,
+              'confirmPassword': confirmPassword,
+            }),
+          ));
+
   Future<Map<String, dynamic>> me(String token) =>
       _send(() => http.get(_u('/auth/me'), headers: {'Authorization': 'Bearer $token'}));
 
