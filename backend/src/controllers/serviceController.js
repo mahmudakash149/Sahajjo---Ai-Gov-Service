@@ -152,4 +152,9 @@ async function listServices(req, res, next) {
   }
 }
 
-module.exports = { listServices };
+module.exports = {
+  listServices,
+  filterFallback,
+  escapeLike,
+  FALLBACK_SERVICES,
+};
