@@ -38,6 +38,17 @@ class S {
   String get priorityService => _t('অগ্রাধিকার সেবা', 'Priority service');
   String get category => _t('বিভাগ', 'Category');
   String get close => _t('বন্ধ করুন', 'Close');
+  String get newApplicationTab => _t('নতুন আবেদন', 'New Application');
+  String get correctionTab => _t('তথ্য সংশোধন ও নবায়ন', 'Correction & Renewal');
+  String get serviceGuidelines => _t('সেবা সংক্রান্ত নির্দেশিকা', 'Official Service Guidelines');
+  String get officialPortal => _t('অফিশিয়াল সরকারি পোর্টাল:', 'Official Government Portal:');
+  String get importantTips => _t('জরুরি সতর্কতা ও পরামর্শ:', 'Important Notes & Tips:');
+  String get viewDetails => _t('নির্দেশনা দেখুন', 'View Guidance');
+  String get tapForFullGuidance => _t('প্রয়োজনীয় কাগজপত্র ও নিয়মাবলী দেখতে চাপুন', 'Tap to view required documents & steps');
+  String get openingPortal => _t('সরকারি পোর্টাল ব্রাউজারে খোলা হচ্ছে… (লিংকটি কপি করা হয়েছে)', 'Opening official portal in browser… (Link copied to clipboard)');
+  String get linkCopied => _t('লিংকটি ক্লিপবোর্ডে কপি করা হয়েছে। ব্রাউজারে পেস্ট করে ভিজিট করুন।', 'Link copied to clipboard. Paste in your browser to visit.');
+  String get visitPortal => _t('ওয়েবসাইটে যান', 'Visit Portal');
+  String get copyLink => _t('কপি করুন', 'Copy Link');
 
   // Service Request Input (FR4)
   String get tabRequest => _t('সহায়তা চান', 'Ask Sahajjo');

@@ -30,6 +30,13 @@ void main() {
 
       expect(bn.category, 'বিভাগ');
       expect(bn.close, 'বন্ধ করুন');
+      expect(bn.newApplicationTab, 'নতুন আবেদন');
+      expect(bn.correctionTab, 'তথ্য সংশোধন ও নবায়ন');
+      expect(bn.officialPortal, isNotEmpty);
+      expect(bn.importantTips, isNotEmpty);
+      expect(bn.visitPortal, 'ওয়েবসাইটে যান');
+      expect(bn.openingPortal, isNotEmpty);
+      expect(bn.linkCopied, isNotEmpty);
     });
 
     test('FR3: Service Catalog strings are present and non-empty in English', () {
@@ -40,6 +47,13 @@ void main() {
       expect(en.close, 'Close');
       expect(en.priorityService, 'Priority service');
       expect(en.noServices, 'No services found.');
+      expect(en.newApplicationTab, 'New Application');
+      expect(en.correctionTab, 'Correction & Renewal');
+      expect(en.officialPortal, isNotEmpty);
+      expect(en.importantTips, isNotEmpty);
+      expect(en.visitPortal, 'Visit Portal');
+      expect(en.openingPortal, isNotEmpty);
+      expect(en.linkCopied, isNotEmpty);
     });
   });
 }
