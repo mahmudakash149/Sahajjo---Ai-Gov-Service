@@ -66,4 +66,30 @@ test('FR3 Service Catalog Test Suite', async (t) => {
     assert.ok(priorityNames.includes('NID Correction'));
     assert.ok(priorityNames.includes('Passport Services'));
   });
+
+  await t.test('9. Should verify comprehensive guidelines for New Application and Correction for each service', () => {
+    for (const service of FALLBACK_SERVICES) {
+      assert.ok(service.guidelines, `Service ${service.id} must have guidelines attached`);
+      const { newApplication, correction } = service.guidelines;
+      
+      // New Application assertions
+      assert.ok(newApplication, `Service ${service.id} must have newApplication guide`);
+      assert.ok(newApplication.requiredDocumentsBn.length >= 2, `Service ${service.id} needs Bn docs for new application`);
+      assert.ok(newApplication.requiredDocumentsEn.length >= 2, `Service ${service.id} needs En docs for new application`);
+      assert.ok(newApplication.stepsBn.length >= 2, `Service ${service.id} needs Bn steps for new application`);
+      assert.ok(newApplication.stepsEn.length >= 2, `Service ${service.id} needs En steps for new application`);
+
+      // Correction assertions
+      assert.ok(correction, `Service ${service.id} must have correction guide`);
+      assert.ok(correction.requiredDocumentsBn.length >= 2, `Service ${service.id} needs Bn docs for correction`);
+      assert.ok(correction.requiredDocumentsEn.length >= 2, `Service ${service.id} needs En docs for correction`);
+      assert.ok(correction.stepsBn.length >= 2, `Service ${service.id} needs Bn steps for correction`);
+      assert.ok(correction.stepsEn.length >= 2, `Service ${service.id} needs En steps for correction`);
+
+      // Official portal and advice
+      assert.ok(service.portalUrl.startsWith('http'), `Service ${service.id} must have a valid portal URL`);
+      assert.ok(service.tipsBn.length > 5, `Service ${service.id} must have tips in Bangla`);
+      assert.ok(service.tipsEn.length > 5, `Service ${service.id} must have tips in English`);
+    }
+  });
 });
