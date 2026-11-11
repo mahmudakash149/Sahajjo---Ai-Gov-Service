@@ -11,7 +11,7 @@ void main() {
       expect(en.lang, 'en');
 
       // Verify general app translation
-      expect(bn.appName, 'সহজ');
+      expect(bn.appName, 'সাহায্য');
       expect(en.appName, 'Sahajjo');
 
       expect(bn.language, 'ভাষা');
