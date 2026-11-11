@@ -4,7 +4,7 @@ class S {
 
   String _t(String bn, String en) => lang == 'bn' ? bn : en;
 
-  String get appName => _t('সহজ', 'Sahajjo');
+  String get appName => _t('সাহায্য', 'Sahajjo');
   String get tagline => _t('সরকারি সেবা, সহজ নির্দেশনা', 'Government services, made simple');
   String get login => _t('লগইন', 'Login');
   String get register => _t('নিবন্ধন করুন', 'Register');
@@ -78,7 +78,7 @@ class S {
   String get matchConfidence => _t('মিল', 'match');
   String get requiredDocs => _t('প্রয়োজনীয় কাগজপত্র:', 'Required Documents:');
   String get stepsTitle => _t('পরবর্তী করণীয় ধাপসমূহ:', 'Step-by-Step Procedure:');
-  String get aiPoweredBadge => _t('সহায় জেমিনাই এআই দ্বারা বিশ্লেষিত', 'Analyzed by Sahajjo Gemini AI');
+  String get aiPoweredBadge => _t('সাহায্য জেমিনাই এআই দ্বারা বিশ্লেষিত', 'Analyzed by Sahajjo Gemini AI');
   String get tapToViewGuidance => _t('এআই নির্দেশনা দেখতে ট্যাপ করুন', 'Tap to view AI guidance');
 
   // Validation
