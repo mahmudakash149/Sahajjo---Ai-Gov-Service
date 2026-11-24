@@ -1,0 +1,60 @@
+const test = require('node:test');
+const assert = require('node:assert/strict');
+const { evaluateReadiness } = require('../src/services/readinessService');
+const { parseBasicFieldsFromText } = require('../src/services/ocrService');
+
+test('evaluateReadiness detects missing documents and name mismatches (FR13-FR15)', () => {
+  const report = evaluateReadiness({
+    requiredDocuments: [
+      'National ID (NID)',
+      '17-digit online birth certificate',
+      'SSC / Educational qualification certificate',
+    ],
+    uploadedDocs: [
+      {
+        docType: 'NID',
+        ocrData: { fullName: 'Md. Akash Mahmud', dateOfBirth: '1998-05-12' },
+      },
+      {
+        docType: 'EDUCATIONAL',
+        ocrData: { fullName: 'Akash Mahmud', dateOfBirth: '1998-05-12' },
+      },
+    ],
+  });
+
+  assert.equal(report.isReady, false);
+  assert.equal(report.status, 'action_needed');
+  assert.deepEqual(report.missingDocuments, ['17-digit online birth certificate']);
+  assert.equal(report.mismatches.length, 1);
+  assert.equal(report.mismatches[0].field, 'fullName');
+});
+
+test('evaluateReadiness returns ready when all required docs match', () => {
+  const report = evaluateReadiness({
+    requiredDocuments: ['National ID (NID)', 'Online Birth Certificate'],
+    uploadedDocs: [
+      {
+        docType: 'NID',
+        ocrData: { fullName: 'Md. Akash Mahmud', dateOfBirth: '1998-05-12' },
+      },
+      {
+        docType: 'BIRTH_CERT',
+        ocrData: { fullName: 'Md. Akash Mahmud', dateOfBirth: '1998-05-12' },
+      },
+    ],
+  });
+
+  assert.equal(report.isReady, true);
+  assert.equal(report.status, 'ready');
+  assert.equal(report.missingDocuments.length, 0);
+  assert.equal(report.mismatches.length, 0);
+});
+
+test('parseBasicFieldsFromText extracts name, DOB, and 10/17-digit ID', () => {
+  const fields = parseBasicFieldsFromText(
+    'Government of Bangladesh\nName: Md. Akash Mahmud\nDate of Birth: 1998-05-12\nNID No: 1234567890'
+  );
+  assert.equal(fields.fullName, 'Md. Akash Mahmud');
+  assert.equal(fields.dateOfBirth, '1998-05-12');
+  assert.equal(fields.documentNumber, '1234567890');
+});

@@ -24,5 +24,83 @@
       "aiPowered": true
     },
     "createdAt": "2026-11-11T18:17:07.340Z"
+  },
+  {
+    "id": 2,
+    "userId": "1",
+    "requestText": "Boter id lagbe",
+    "language": "en",
+    "status": "processed",
+    "aiDiagnosis": {
+      "serviceId": 1,
+      "serviceName": "Birth Registration",
+      "serviceNameBn": "জন্ম নিবন্ধন",
+      "confidence": 0.75,
+      "summary": "Your request matches the \"Birth Registration\" service.",
+      "requiredDocuments": [
+        "National ID / Birth Certificate",
+        "Passport size photographs",
+        "Payment receipt/challan"
+      ],
+      "steps": [
+        "Fill out the application on the official portal",
+        "Pay the requisite government fees",
+        "Submit documents and receive approval"
+      ],
+      "aiPowered": false
+    },
+    "createdAt": "2026-11-11T18:48:01.367Z"
+  },
+  {
+    "id": 3,
+    "userId": "1",
+    "requestText": "Tin certi",
+    "language": "en",
+    "status": "processed",
+    "aiDiagnosis": {
+      "serviceId": 8,
+      "serviceName": "TIN Registration",
+      "serviceNameBn": "টিআইএন নিবন্ধন",
+      "confidence": 0.98,
+      "summary": "Assistance for obtaining a Taxpayer Identification Number (TIN) certificate for legal business and income tax purposes in Bangladesh.",
+      "requiredDocuments": [
+        "Valid National ID (NID) card",
+        "Active mobile phone number registered under your name",
+        "Email address"
+      ],
+      "steps": [
+        "Visit the official Bangladesh Income Tax portal or National Board of Revenue (NBR) website.",
+        "Register for a new account using your NID and mobile number, then fill out the TIN application form.",
+        "Submit the application to instantly generate and download your official TIN certificate."
+      ],
+      "aiPowered": true
+    },
+    "createdAt": "2026-11-12T18:53:26.169Z"
+  },
+  {
+    "id": 4,
+    "userId": "1",
+    "requestText": "I want to apply for a new passport. What are the required documents and fees?",
+    "language": "en",
+    "status": "processed",
+    "aiDiagnosis": {
+      "serviceId": 3,
+      "serviceName": "Passport Services",
+      "serviceNameBn": "পাসপোর্ট সেবা",
+      "confidence": 0.95,
+      "summary": "Your request matches the \"Passport Services\" service.",
+      "requiredDocuments": [
+        "National ID / Birth Certificate",
+        "Passport size photographs",
+        "Payment receipt/challan"
+      ],
+      "steps": [
+        "Fill out the application on the official portal",
+        "Pay the requisite government fees",
+        "Submit documents and receive approval"
+      ],
+      "aiPowered": false
+    },
+    "createdAt": "2026-11-12T19:19:19.498Z"
   }
 ]

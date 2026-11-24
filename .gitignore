@@ -3,3 +3,6 @@ node_modules/
 build/
 .dart_tool/
 *.zip
+storage/weed.exe
+storage/data/
+backend/database/documents_store.json

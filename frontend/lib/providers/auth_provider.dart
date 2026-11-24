@@ -119,6 +119,48 @@ class AuthProvider extends ChangeNotifier {
     return await _api.getMyServiceRequests(_token!);
   }
 
+  /// FR11-FR15: Document upload, OCR & readiness check
+  Future<List<Map<String, dynamic>>> fetchRequestDocuments(String requestId) async {
+    if (_token == null) return [];
+    return await _api.getRequestDocuments(_token!, requestId);
+  }
+
+  Future<Map<String, dynamic>> uploadDocument({
+    required String requestId,
+    required String docType,
+    required String fileName,
+    required List<int> bytes,
+    required String mimeType,
+  }) async {
+    if (_token == null) throw ApiException('Not authenticated');
+    return await _api.uploadDocument(
+      _token!,
+      requestId: requestId,
+      docType: docType,
+      fileName: fileName,
+      bytes: bytes,
+      mimeType: mimeType,
+      language: _lang,
+    );
+  }
+
+  Future<void> deleteDocument(dynamic docId) async {
+    if (_token == null) throw ApiException('Not authenticated');
+    await _api.deleteDocument(_token!, docId);
+  }
+
+  Future<Map<String, dynamic>> generateReadinessReport({
+    required String requestId,
+    required List<String> requiredDocuments,
+  }) async {
+    if (_token == null) throw ApiException('Not authenticated');
+    return await _api.getReadinessReport(
+      _token!,
+      requestId,
+      requiredDocuments: requiredDocuments,
+    );
+  }
+
   Future<void> logout() async {
     await _storage.delete(key: _tokenKey);
     _token = null;

@@ -92,4 +92,15 @@ test('FR3 Service Catalog Test Suite', async (t) => {
       assert.ok(service.tipsEn.length > 5, `Service ${service.id} must have tips in English`);
     }
   });
+
+  await t.test('10. Should find NID Correction when searching with Boter or Voter ID', async () => {
+    const { identifyServiceWithGemini } = require('../src/services/geminiService');
+    const voterResults = filterFallback('voter');
+    const boterResults = filterFallback('boter');
+    assert.ok(voterResults.some((s) => s.id === 2), 'voter should match NID Correction');
+    assert.ok(boterResults.some((s) => s.id === 2), 'boter should match NID Correction');
+
+    const aiRes = await identifyServiceWithGemini('Boter id', 'en');
+    assert.equal(aiRes.serviceId, 2, 'Boter id must identify as NID (Service ID 2)');
+  });
 });

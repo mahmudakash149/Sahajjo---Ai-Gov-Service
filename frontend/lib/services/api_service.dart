@@ -120,6 +120,164 @@ class ApiService {
     await _send(() => http.delete(_u('/auth/me'), headers: {'Authorization': 'Bearer $token'}));
   }
 
+  // FR11-FR15: Document Upload, S3 Presigned URLs, OCR & Readiness
+  Future<Map<String, dynamic>> presignDocumentUpload(
+    String token, {
+    required String requestId,
+    required String docType,
+    required String fileName,
+    required String mimeType,
+  }) =>
+      _send(() => http.post(
+            _u('/documents/presign'),
+            headers: {..._json, 'Authorization': 'Bearer $token'},
+            body: jsonEncode({
+              'requestId': requestId,
+              'docType': docType,
+              'fileName': fileName,
+              'mimeType': mimeType,
+            }),
+          ));
+
+  Future<Map<String, dynamic>> confirmDocumentUpload(
+    String token, {
+    required String requestId,
+    required String docType,
+    required String objectKey,
+    required String fileName,
+    required int fileSize,
+    required String mimeType,
+    String? language,
+  }) =>
+      _send(() => http.post(
+            _u('/documents/confirm'),
+            headers: {..._json, 'Authorization': 'Bearer $token'},
+            body: jsonEncode({
+              'requestId': requestId,
+              'docType': docType,
+              'objectKey': objectKey,
+              'fileName': fileName,
+              'fileSize': fileSize,
+              'mimeType': mimeType,
+              if (language != null) 'language': language,
+            }),
+          ));
+
+  Future<Map<String, dynamic>> uploadDocumentMultipart(
+    String token, {
+    required String requestId,
+    required String docType,
+    required String fileName,
+    required List<int> bytes,
+    required String mimeType,
+    String? language,
+  }) async {
+    try {
+      final req = http.MultipartRequest('POST', _u('/documents/upload'))
+        ..headers['Authorization'] = 'Bearer $token'
+        ..fields['requestId'] = requestId
+        ..fields['docType'] = docType
+        ..fields['mimeType'] = mimeType;
+      if (language != null) req.fields['language'] = language;
+      req.files.add(http.MultipartFile.fromBytes('file', bytes, filename: fileName));
+
+      final streamed = await req.send().timeout(const Duration(seconds: 45));
+      final res = await http.Response.fromStream(streamed);
+      final body = res.body.isEmpty ? <String, dynamic>{} : jsonDecode(res.body) as Map<String, dynamic>;
+      if (res.statusCode >= 200 && res.statusCode < 300) return body;
+      final msg = (body['message'] ?? 'Upload failed (${res.statusCode})').toString();
+      throw ApiException(msg, status: res.statusCode);
+    } on TimeoutException {
+      throw ApiException('network');
+    } on http.ClientException {
+      throw ApiException('network');
+    }
+  }
+
+  /// Uploads via S3 presigned URL first; falls back to backend multipart upload if direct S3 PUT fails.
+  Future<Map<String, dynamic>> uploadDocument(
+    String token, {
+    required String requestId,
+    required String docType,
+    required String fileName,
+    required List<int> bytes,
+    required String mimeType,
+    String? language,
+  }) async {
+    try {
+      final presign = await presignDocumentUpload(
+        token,
+        requestId: requestId,
+        docType: docType,
+        fileName: fileName,
+        mimeType: mimeType,
+      );
+      final uploadUrl = presign['uploadUrl']?.toString() ?? '';
+      final objectKey = presign['objectKey']?.toString() ?? '';
+      if (uploadUrl.isNotEmpty && objectKey.isNotEmpty) {
+        final s3Res = await http
+            .put(
+              Uri.parse(uploadUrl),
+              headers: {'Content-Type': mimeType},
+              body: bytes,
+            )
+            .timeout(const Duration(seconds: 30));
+        if (s3Res.statusCode >= 200 && s3Res.statusCode < 300) {
+          return confirmDocumentUpload(
+            token,
+            requestId: requestId,
+            docType: docType,
+            objectKey: objectKey,
+            fileName: fileName,
+            fileSize: bytes.length,
+            mimeType: mimeType,
+            language: language,
+          );
+        }
+      }
+    } catch (_) {
+      // Fall back to backend multipart S3 upload
+    }
+
+    return uploadDocumentMultipart(
+      token,
+      requestId: requestId,
+      docType: docType,
+      fileName: fileName,
+      bytes: bytes,
+      mimeType: mimeType,
+      language: language,
+    );
+  }
+
+  Future<List<Map<String, dynamic>>> getRequestDocuments(String token, String requestId) async {
+    final res = await _send(() => http.get(
+          _u('/documents/request/$requestId'),
+          headers: {'Authorization': 'Bearer $token'},
+        ));
+    return (res['documents'] as List? ?? []).map((e) => Map<String, dynamic>.from(e)).toList();
+  }
+
+  Future<Map<String, dynamic>> getReadinessReport(
+    String token,
+    String requestId, {
+    required List<String> requiredDocuments,
+  }) async {
+    final res = await _send(() => http.post(
+          _u('/documents/request/$requestId/readiness'),
+          headers: {..._json, 'Authorization': 'Bearer $token'},
+          body: jsonEncode({'requiredDocuments': requiredDocuments}),
+        ));
+    return Map<String, dynamic>.from(res['report'] ?? {});
+  }
+
+  Future<void> deleteDocument(String token, dynamic docId) async {
+    await _send(() => http.delete(
+          _u('/documents/$docId'),
+          headers: {'Authorization': 'Bearer $token'},
+        ));
+  }
+
   Future<Map<String, dynamic>> _send(Future<http.Response> Function() call) async {
     try {
       final res = await call().timeout(_timeout);

@@ -1,0 +1,14 @@
+{
+  "identities": [
+    {
+      "name": "sahajjo",
+      "credentials": [
+        {
+          "accessKey": "sahajjo_s3_key",
+          "secretKey": "sahajjo_s3_secret_2026"
+        }
+      ],
+      "actions": ["Admin", "Read", "List", "Tagging", "Write"]
+    }
+  ]
+}

@@ -1,0 +1,694 @@
+import 'package:file_picker/file_picker.dart';
+import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import '../providers/auth_provider.dart';
+
+/// Screen for FR11 (Document Upload), FR12 (OCR Extraction),
+/// FR13 (Missing Document Detection), FR14 (Mismatch Check), and FR15 (Readiness Report).
+class DocumentUploadScreen extends StatefulWidget {
+  final String requestId;
+  final String requestText;
+  final int serviceId;
+  final String serviceName;
+  final List<String> requiredDocuments;
+
+  const DocumentUploadScreen({
+    super.key,
+    required this.requestId,
+    required this.requestText,
+    required this.serviceId,
+    required this.serviceName,
+    required this.requiredDocuments,
+  });
+
+  @override
+  State<DocumentUploadScreen> createState() => _DocumentUploadScreenState();
+}
+
+class _DocumentUploadScreenState extends State<DocumentUploadScreen> {
+  String _selectedDocType = 'NID';
+  final List<Map<String, dynamic>> _uploadedFiles = [];
+  Map<String, dynamic>? _readinessReport;
+  bool _loadingDocs = true;
+  bool _uploading = false;
+  bool _checkingReadiness = false;
+
+  final List<Map<String, String>> _docTypes = [
+    {'key': 'NID', 'bn': 'জাতীয় পরিচয়পত্র (NID)', 'en': 'National ID (NID)'},
+    {'key': 'BIRTH_CERT', 'bn': 'অনলাইন জন্ম নিবন্ধন সনদ', 'en': 'Online Birth Certificate'},
+    {'key': 'EDUCATIONAL', 'bn': 'শিক্ষাগত সনদ (SSC/HSC)', 'en': 'Educational Certificate (SSC/HSC)'},
+    {'key': 'CITIZENSHIP', 'bn': 'নাগরিকত্ব প্রত্যয়নপত্র', 'en': 'Citizenship Certificate'},
+    {'key': 'UTILITY_BILL', 'bn': 'বিদ্যুৎ/পানি বিল (ঠিকানা প্রমাণ)', 'en': 'Utility Bill (Address Proof)'},
+    {'key': 'OTHER', 'bn': 'অন্যান্য নথি', 'en': 'Other Document'},
+  ];
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) => _loadDocuments());
+  }
+
+  String _docTitle(String docType, bool isBn) {
+    final match = _docTypes.firstWhere(
+      (d) => d['key'] == docType,
+      orElse: () => _docTypes.last,
+    );
+    return isBn ? match['bn']! : match['en']!;
+  }
+
+  String _formatBytes(dynamic bytesVal) {
+    final bytes = int.tryParse(bytesVal?.toString() ?? '0') ?? 0;
+    if (bytes >= 1024 * 1024) {
+      return '${(bytes / (1024 * 1024)).toStringAsFixed(1)} MB';
+    }
+    if (bytes >= 1024) {
+      return '${(bytes / 1024).toStringAsFixed(0)} KB';
+    }
+    return '$bytes B';
+  }
+
+  String _inferMimeType(String fileName) {
+    final lower = fileName.toLowerCase();
+    if (lower.endsWith('.png')) return 'image/png';
+    if (lower.endsWith('.webp')) return 'image/webp';
+    if (lower.endsWith('.pdf')) return 'application/pdf';
+    return 'image/jpeg';
+  }
+
+  Future<void> _loadDocuments() async {
+    try {
+      final auth = context.read<AuthProvider>();
+      final docs = await auth.fetchRequestDocuments(widget.requestId);
+      if (!mounted) return;
+      setState(() {
+        _uploadedFiles
+          ..clear()
+          ..addAll(docs);
+        _loadingDocs = false;
+      });
+    } catch (_) {
+      if (!mounted) return;
+      setState(() => _loadingDocs = false);
+    }
+  }
+
+  Future<void> _pickAndUploadDocument() async {
+    final auth = context.read<AuthProvider>();
+    final isBn = auth.lang == 'bn';
+
+    final result = await FilePicker.platform.pickFiles(
+      type: FileType.custom,
+      allowedExtensions: ['jpg', 'jpeg', 'png', 'webp', 'pdf'],
+      withData: true,
+    );
+
+    if (result == null || result.files.isEmpty) return;
+    final picked = result.files.first;
+    final bytes = picked.bytes;
+    if (bytes == null || bytes.isEmpty) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(isBn ? 'ফাইল পড়া যায়নি।' : 'Could not read selected file.'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+
+    setState(() => _uploading = true);
+    try {
+      final res = await auth.uploadDocument(
+        requestId: widget.requestId,
+        docType: _selectedDocType,
+        fileName: picked.name,
+        bytes: bytes,
+        mimeType: _inferMimeType(picked.name),
+      );
+
+      final doc = Map<String, dynamic>.from(res['document'] ?? {});
+      if (!mounted) return;
+      setState(() {
+        _uploadedFiles.add(doc);
+        _readinessReport = null;
+        _uploading = false;
+      });
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            isBn
+                ? 'ডকুমেন্ট S3 স্টোরেজে আপলোড ও OCR সম্পন্ন হয়েছে!'
+                : 'Document uploaded to S3 and OCR extracted successfully!',
+          ),
+          backgroundColor: const Color(0xFF006A4E),
+          duration: const Duration(seconds: 2),
+        ),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _uploading = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            isBn ? 'আপলোড ব্যর্থ হয়েছে: $e' : 'Upload failed: $e',
+          ),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
+
+  Future<void> _removeDoc(int index) async {
+    final auth = context.read<AuthProvider>();
+    final doc = _uploadedFiles[index];
+    final docId = doc['id'];
+
+    setState(() {
+      _uploadedFiles.removeAt(index);
+      _readinessReport = null;
+    });
+
+    if (docId != null) {
+      try {
+        await auth.deleteDocument(docId);
+      } catch (_) {
+        // Ignore delete error if already removed
+      }
+    }
+  }
+
+  Future<void> _checkReadiness() async {
+    final auth = context.read<AuthProvider>();
+    final isBn = auth.lang == 'bn';
+    setState(() => _checkingReadiness = true);
+
+    try {
+      final report = await auth.generateReadinessReport(
+        requestId: widget.requestId,
+        requiredDocuments: widget.requiredDocuments,
+      );
+      if (!mounted) return;
+      setState(() {
+        _readinessReport = report;
+        _checkingReadiness = false;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _checkingReadiness = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(isBn ? 'রিপোর্ট তৈরি ব্যর্থ: $e' : 'Failed to generate report: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final auth = context.watch<AuthProvider>();
+    final s = auth.s;
+    final isBn = auth.lang == 'bn';
+
+    return Scaffold(
+      appBar: AppBar(
+        title: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              s.docUploadTitle,
+              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+            ),
+            Text(
+              '#REQ-${widget.requestId} • ${widget.serviceName}',
+              style: const TextStyle(fontSize: 12, color: Colors.grey),
+            ),
+          ],
+        ),
+      ),
+      body: ListView(
+        padding: const EdgeInsets.all(16),
+        children: [
+          // Banner introducing FR11-FR15
+          Container(
+            padding: const EdgeInsets.all(14),
+            decoration: BoxDecoration(
+              color: const Color(0xFF006A4E).withValues(alpha: 0.08),
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(color: const Color(0xFF006A4E).withValues(alpha: 0.2)),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    const Icon(Icons.verified_outlined, color: Color(0xFF006A4E), size: 20),
+                    const SizedBox(width: 8),
+                    Text(
+                      isBn ? 'ডকুমেন্ট ভেরিফিকেশন ও রেডিনেস মডিউল' : 'Document Readiness Module',
+                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: Color(0xFF006A4E)),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  s.docUploadSubtitle,
+                  style: TextStyle(fontSize: 12.5, color: Colors.grey.shade700, height: 1.3),
+                ),
+              ],
+            ),
+          ),
+
+          const SizedBox(height: 20),
+
+          // Required Checklist Section (FR13 source)
+          Text(
+            s.requiredDocs,
+            style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold),
+          ),
+          const SizedBox(height: 8),
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: Colors.grey.shade200),
+            ),
+            child: widget.requiredDocuments.isEmpty
+                ? Text(
+                    isBn ? 'কোনো নির্দিষ্ট কাগজপত্রের তালিকা নেই।' : 'No specific checklist for this service.',
+                    style: TextStyle(fontSize: 13, color: Colors.grey.shade600),
+                  )
+                : Column(
+                    children: widget.requiredDocuments.map((doc) {
+                      return Padding(
+                        padding: const EdgeInsets.only(bottom: 6),
+                        child: Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Icon(Icons.check_circle_outline, color: Color(0xFF006A4E), size: 16),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: Text(doc, style: const TextStyle(fontSize: 13, height: 1.3)),
+                            ),
+                          ],
+                        ),
+                      );
+                    }).toList(),
+                  ),
+          ),
+
+          const SizedBox(height: 20),
+
+          // FR11: Document Upload Card
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(color: Colors.grey.shade300),
+              boxShadow: [
+                BoxShadow(color: Colors.black.withValues(alpha: 0.03), blurRadius: 6, offset: const Offset(0, 2)),
+              ],
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    const Icon(Icons.cloud_upload_outlined, color: Color(0xFF006A4E), size: 20),
+                    const SizedBox(width: 8),
+                    Text(
+                      'FR11: ${s.chooseFile}',
+                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                Text(
+                  s.selectDocType,
+                  style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Colors.grey.shade700),
+                ),
+                const SizedBox(height: 6),
+                DropdownButtonFormField<String>(
+                  initialValue: _selectedDocType,
+                  isExpanded: true,
+                  decoration: InputDecoration(
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+                  ),
+                  items: _docTypes.map((dt) {
+                    return DropdownMenuItem<String>(
+                      value: dt['key'],
+                      child: Text(
+                        isBn ? dt['bn']! : dt['en']!,
+                        style: const TextStyle(fontSize: 13),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    );
+                  }).toList(),
+                  onChanged: _uploading
+                      ? null
+                      : (val) {
+                          if (val != null) setState(() => _selectedDocType = val);
+                        },
+                ),
+                const SizedBox(height: 14),
+                SizedBox(
+                  width: double.infinity,
+                  child: FilledButton.icon(
+                    style: FilledButton.styleFrom(
+                      backgroundColor: const Color(0xFF006A4E),
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                    ),
+                    onPressed: _uploading ? null : _pickAndUploadDocument,
+                    icon: _uploading
+                        ? const SizedBox(
+                            width: 18,
+                            height: 18,
+                            child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                          )
+                        : const Icon(Icons.add_photo_alternate_outlined, size: 18),
+                    label: Text(
+                      _uploading
+                          ? (isBn ? 'আপলোড ও OCR চলছে...' : 'Uploading & Running OCR...')
+                          : (isBn ? 'নথি নির্বাচন ও আপলোড করুন' : 'Select & Upload Document'),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+
+          const SizedBox(height: 24),
+
+          // Uploaded Documents List with OCR (FR11 & FR12)
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                '${s.uploadedDocs} (${_uploadedFiles.length})',
+                style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold),
+              ),
+              if (_uploadedFiles.isNotEmpty)
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                  decoration: BoxDecoration(
+                    color: Colors.green.shade50,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: Colors.green.shade200),
+                  ),
+                  child: Text(
+                    isBn ? 'S3 + OCR সক্রিয়' : 'S3 + OCR Active',
+                    style: TextStyle(fontSize: 10.5, color: Colors.green.shade800, fontWeight: FontWeight.bold),
+                  ),
+                ),
+            ],
+          ),
+          const SizedBox(height: 8),
+
+          if (_loadingDocs)
+            const Padding(
+              padding: EdgeInsets.all(24),
+              child: Center(child: CircularProgressIndicator()),
+            )
+          else if (_uploadedFiles.isEmpty)
+            Container(
+              padding: const EdgeInsets.all(24),
+              decoration: BoxDecoration(
+                color: Colors.grey.shade50,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: Colors.grey.shade200),
+              ),
+              child: Center(
+                child: Column(
+                  children: [
+                    Icon(Icons.folder_open_outlined, size: 36, color: Colors.grey.shade400),
+                    const SizedBox(height: 8),
+                    Text(
+                      s.noDocsUploaded,
+                      style: TextStyle(color: Colors.grey.shade600, fontSize: 13),
+                    ),
+                  ],
+                ),
+              ),
+            )
+          else
+            ..._uploadedFiles.asMap().entries.map((entry) {
+              final idx = entry.key;
+              final file = entry.value;
+              final docType = (file['docType'] ?? 'OTHER').toString();
+              final ocr = file['ocrData'] is Map
+                  ? Map<String, dynamic>.from(file['ocrData'] as Map)
+                  : <String, dynamic>{};
+              final ocrName = ocr['fullName']?.toString() ?? (isBn ? 'সনাক্ত করা যায়নি' : 'Not detected');
+              final ocrDob = ocr['dateOfBirth']?.toString() ?? 'N/A';
+              final ocrEngine = ocr['ocrEngine']?.toString() ?? 'ocr';
+
+              return Card(
+                margin: const EdgeInsets.only(bottom: 10),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  side: BorderSide(color: Colors.grey.shade200),
+                ),
+                child: Padding(
+                  padding: const EdgeInsets.all(12),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Expanded(
+                            child: Row(
+                              children: [
+                                Container(
+                                  padding: const EdgeInsets.all(8),
+                                  decoration: BoxDecoration(
+                                    color: const Color(0xFF006A4E).withValues(alpha: 0.1),
+                                    borderRadius: BorderRadius.circular(8),
+                                  ),
+                                  child: const Icon(Icons.description, color: Color(0xFF006A4E), size: 20),
+                                ),
+                                const SizedBox(width: 10),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        _docTitle(docType, isBn),
+                                        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13.5),
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                      Text(
+                                        '${file['fileName'] ?? ''} • ${_formatBytes(file['fileSize'])}',
+                                        style: TextStyle(fontSize: 11, color: Colors.grey.shade600),
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          IconButton(
+                            icon: const Icon(Icons.delete_outline, color: Colors.red, size: 20),
+                            onPressed: () => _removeDoc(idx),
+                            tooltip: s.delete,
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 8),
+                      // FR12: OCR Extracted Fields Card
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                        decoration: BoxDecoration(
+                          color: Colors.grey.shade50,
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(color: Colors.grey.shade200),
+                        ),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Expanded(
+                              child: Text(
+                                'OCR ($ocrEngine): $ocrName',
+                                style: TextStyle(fontSize: 12, color: Colors.grey.shade800, fontWeight: FontWeight.w600),
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            Text(
+                              'DOB: $ocrDob',
+                              style: TextStyle(fontSize: 11, color: Colors.grey.shade600),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              );
+            }),
+
+          const SizedBox(height: 16),
+
+          // FR15: Readiness Report Button
+          if (_uploadedFiles.isNotEmpty)
+            SizedBox(
+              width: double.infinity,
+              child: FilledButton.icon(
+                style: FilledButton.styleFrom(
+                  backgroundColor: const Color(0xFF006A4E),
+                  padding: const EdgeInsets.symmetric(vertical: 14),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                ),
+                onPressed: _checkingReadiness ? null : _checkReadiness,
+                icon: _checkingReadiness
+                    ? const SizedBox(
+                        width: 18,
+                        height: 18,
+                        child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                      )
+                    : const Icon(Icons.assessment_outlined, size: 18),
+                label: Text(s.checkReadinessBtn),
+              ),
+            ),
+
+          // FR13, FR14, FR15: Readiness Report View
+          if (_readinessReport != null && _uploadedFiles.isNotEmpty) ...[
+            const SizedBox(height: 20),
+            _buildReadinessReportCard(isBn, _readinessReport!),
+          ],
+
+          const SizedBox(height: 30),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildReadinessReportCard(bool isBn, Map<String, dynamic> report) {
+    final s = context.read<AuthProvider>().s;
+    final isReady = report['isReady'] == true;
+    final missing = (report['missingDocuments'] as List? ?? []).map((e) => e.toString()).toList();
+    final mismatches = (report['mismatches'] as List? ?? [])
+        .map((e) => Map<String, dynamic>.from(e as Map))
+        .toList();
+
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: isReady ? Colors.green.shade50 : Colors.amber.shade50,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: isReady ? Colors.green.shade300 : Colors.amber.shade300),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                isBn ? 'রেডিনেস রিপোর্ট (FR15)' : 'Readiness Report (FR15)',
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 15,
+                  color: isReady ? Colors.green.shade900 : Colors.amber.shade900,
+                ),
+              ),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                decoration: BoxDecoration(
+                  color: isReady ? Colors.green.shade200 : Colors.amber.shade200,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Text(
+                  isReady ? (isBn ? 'প্রস্তুত' : 'Ready') : (isBn ? 'অসম্পূর্ণ' : 'Action Needed'),
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 11,
+                    color: isReady ? Colors.green.shade900 : Colors.amber.shade900,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+
+          // FR13: Missing Document Detection
+          Text(
+            isBn ? '১. অনুপস্থিত ডকুমেন্টস (FR13):' : '1. Missing Documents (FR13):',
+            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+          ),
+          const SizedBox(height: 4),
+          if (missing.isEmpty)
+            Text(
+              isBn ? '✓ প্রয়োজনীয় সকল নথি আপলোড করা হয়েছে।' : '✓ All expected documents uploaded.',
+              style: TextStyle(fontSize: 12.5, color: Colors.green.shade800),
+            )
+          else
+            ...missing.map(
+              (m) => Padding(
+                padding: const EdgeInsets.only(bottom: 4),
+                child: Text(
+                  '⚠️ $m',
+                  style: TextStyle(fontSize: 12.5, color: Colors.amber.shade900),
+                ),
+              ),
+            ),
+
+          const SizedBox(height: 12),
+
+          // FR14: Document Mismatch Detection
+          Text(
+            isBn ? '২. তথ্যের গরমিল ও অসঙ্গতি (FR14):' : '2. Information Mismatch (FR14):',
+            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+          ),
+          const SizedBox(height: 4),
+          if (mismatches.isNotEmpty)
+            ...mismatches.map(
+              (mm) => Container(
+                margin: const EdgeInsets.only(bottom: 6),
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: Colors.red.shade50,
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: Colors.red.shade200),
+                ),
+                child: Text(
+                  '⚠️ ${isBn ? (mm['messageBn'] ?? mm['messageEn']) : (mm['messageEn'] ?? mm['messageBn'])}',
+                  style: TextStyle(fontSize: 12, color: Colors.red.shade900, height: 1.3),
+                ),
+              ),
+            )
+          else
+            Text(
+              isBn ? '✓ আপলোডকৃত নথির নাম ও জন্ম তারিখে কোনো গরমিল পাওয়া যায়নি।' : '✓ No name or date discrepancies detected across files.',
+              style: TextStyle(fontSize: 12.5, color: Colors.green.shade800),
+            ),
+
+          const SizedBox(height: 16),
+          const Divider(),
+          const SizedBox(height: 8),
+
+          // Mandatory Preliminary Disclaimer (SRS requirement)
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Icon(Icons.info_outline, size: 16, color: Colors.grey.shade700),
+              const SizedBox(width: 6),
+              Expanded(
+                child: Text(
+                  s.preliminaryDisclaimer,
+                  style: TextStyle(fontSize: 11, color: Colors.grey.shade700, fontStyle: FontStyle.italic, height: 1.3),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
