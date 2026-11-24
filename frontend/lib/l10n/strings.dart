@@ -132,4 +132,15 @@ class S {
   String get updatingPassword => _t('সংরক্ষণ করা হচ্ছে…', 'Saving…');
   String get passwordChangedSuccess => _t('পাসওয়ার্ড সফলভাবে পরিবর্তন করা হয়েছে! নতুন পাসওয়ার্ড দিয়ে লগইন করুন।', 'Password has been updated successfully! Please log in with your new password.');
   String get verifyOtpOnly => _t('ওটিপি যাচাই করুন', 'Verify OTP');
+
+  // Document Upload & Readiness (FR11 - FR15)
+  String get uploadDocsBtn => _t('কাগজপত্র আপলোড করুন (FR11-FR15)', 'Upload Documents (FR11-FR15)');
+  String get docUploadTitle => _t('কাগজপত্র আপলোড ও রেডিনেস চেক', 'Document Upload & Readiness Check');
+  String get docUploadSubtitle => _t('প্রয়োজনীয় কাগজপত্র আপলোড করে স্বয়ংক্রিয়ভাবে প্রস্তুত কিনা যাচাই করুন', 'Upload required documents to automatically verify your readiness');
+  String get selectDocType => _t('ডকুমেন্টের ধরন বেছে নিন', 'Select Document Type');
+  String get chooseFile => _t('ফাইল নির্বাচন করুন (JPG, PNG, PDF)', 'Choose File (JPG, PNG, PDF)');
+  String get uploadedDocs => _t('আপলোডকৃত কাগজপত্র', 'Uploaded Documents');
+  String get noDocsUploaded => _t('এখনও কোনো নথি আপলোড করা হয়নি।', 'No documents uploaded yet.');
+  String get checkReadinessBtn => _t('রেডিনেস রিপোর্ট তৈরি করুন', 'Generate Readiness Report');
+  String get preliminaryDisclaimer => _t('সতর্কতা: এটি শুধুমাত্র একটি প্রাথমিক যাচাইকরণ এবং কোনো অফিশিয়াল সরকারি অনুমোদন নয়।', 'Disclaimer: This is a preliminary check only and not an official government approval.');
 }

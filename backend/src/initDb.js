@@ -94,50 +94,80 @@ const SEED_SERVICES = [
   [8, 4, 'টিআইএন নিবন্ধন',     'TIN Registration',     'কর শনাক্তকরণ নম্বর (TIN) পাওয়ার জন্য নিবন্ধন।', 'Register to get a Taxpayer Identification Number (TIN).', 0]
 ];
 
-async function ensureRequestsTable() {
+async function tableExists(tableName) {
   try {
-    await pool.execute(CREATE_REQUESTS_TABLE);
+    await pool.execute(`SELECT 1 FROM \`${tableName}\` LIMIT 0`);
     return true;
   } catch (err) {
-    console.warn('[initDb] Could not ensure service_requests table:', err.message);
     return false;
   }
+}
+
+async function ensureTable(tableName, createSql) {
+  if (await tableExists(tableName)) {
+    return true;
+  }
+  try {
+    await pool.execute(createSql);
+    return true;
+  } catch (err) {
+    if (
+      err.errno === 1142 ||
+      err.code === 'ER_TABLEACCESS_DENIED_ERROR' ||
+      (err.message && err.message.includes('CREATE command denied'))
+    ) {
+      console.warn(
+        `[initDb] Table '${tableName}' does not exist and database user lacks CREATE privilege. Please run database/schema.sql as MySQL root.`
+      );
+      return false;
+    }
+    console.warn(`[initDb] Could not ensure table '${tableName}':`, err.message);
+    return false;
+  }
+}
+
+async function ensureRequestsTable() {
+  return ensureTable('service_requests', CREATE_REQUESTS_TABLE);
 }
 
 async function initDatabase() {
   try {
     // 1. Ensure core auth & users tables
-    await pool.execute(CREATE_USERS_TABLE);
-    await pool.execute(CREATE_OTP_TABLE);
+    await ensureTable('users', CREATE_USERS_TABLE);
+    await ensureTable('otp_codes', CREATE_OTP_TABLE);
 
     // 2. Ensure categories & services tables
-    await pool.execute(CREATE_CATEGORIES_TABLE);
-    await pool.execute(CREATE_SERVICES_TABLE);
+    await ensureTable('service_categories', CREATE_CATEGORIES_TABLE);
+    await ensureTable('services', CREATE_SERVICES_TABLE);
 
     // 3. Seed default categories if empty
-    const [catRows] = await pool.execute('SELECT COUNT(*) AS count FROM service_categories');
-    if (catRows[0].count === 0) {
-      for (const cat of SEED_CATEGORIES) {
-        await pool.execute(
-          'INSERT IGNORE INTO service_categories (id, name_bn, name_en, description_bn, description_en) VALUES (?, ?, ?, ?, ?)',
-          cat
-        );
+    if (await tableExists('service_categories')) {
+      const [catRows] = await pool.execute('SELECT COUNT(*) AS count FROM service_categories');
+      if (catRows[0].count === 0) {
+        for (const cat of SEED_CATEGORIES) {
+          await pool.execute(
+            'INSERT IGNORE INTO service_categories (id, name_bn, name_en, description_bn, description_en) VALUES (?, ?, ?, ?, ?)',
+            cat
+          );
+        }
       }
     }
 
     // 4. Seed default services if empty
-    const [svcRows] = await pool.execute('SELECT COUNT(*) AS count FROM services');
-    if (svcRows[0].count === 0) {
-      for (const s of SEED_SERVICES) {
-        await pool.execute(
-          'INSERT IGNORE INTO services (id, category_id, name_bn, name_en, description_bn, description_en, is_priority) VALUES (?, ?, ?, ?, ?, ?, ?)',
-          s
-        );
+    if (await tableExists('services')) {
+      const [svcRows] = await pool.execute('SELECT COUNT(*) AS count FROM services');
+      if (svcRows[0].count === 0) {
+        for (const s of SEED_SERVICES) {
+          await pool.execute(
+            'INSERT IGNORE INTO services (id, category_id, name_bn, name_en, description_bn, description_en, is_priority) VALUES (?, ?, ?, ?, ?, ?, ?)',
+            s
+          );
+        }
       }
     }
 
     // 5. Ensure service_requests table
-    await pool.execute(CREATE_REQUESTS_TABLE);
+    await ensureTable('service_requests', CREATE_REQUESTS_TABLE);
 
     console.log('[initDb] Database schema and tables verified successfully.');
     return true;

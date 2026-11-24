@@ -465,8 +465,8 @@ const FALLBACK_SERVICES = [
     categoryNameEn: 'Identity & Registration',
     nameBn: 'এনআইডি তথ্য সংশোধন',
     nameEn: 'NID Correction',
-    descriptionBn: 'জাতীয় পরিচয়পত্রের নাম, ঠিকানা বা অন্য তথ্য সংশোধন করা।',
-    descriptionEn: 'Correct the name, address or other details on a National ID card.',
+    descriptionBn: 'জাতীয় পরিচয়পত্র (ভোটার আইডি কার্ড) এর নাম, ঠিকানা বা অন্য তথ্য সংশোধন করা।',
+    descriptionEn: 'Correct the name, address or other details on a National ID (Voter ID) card.',
     isPriority: true,
   },
   {
@@ -540,12 +540,15 @@ const FALLBACK_SERVICES = [
 function filterFallback(q) {
   if (!q) return FALLBACK_SERVICES;
   const lower = q.toLowerCase();
+  const normalized = lower.replace(/\bboter\b/g, 'voter');
   return FALLBACK_SERVICES.filter(
     (s) =>
       s.nameBn.includes(q) ||
       s.nameEn.toLowerCase().includes(lower) ||
+      s.nameEn.toLowerCase().includes(normalized) ||
       s.descriptionBn.includes(q) ||
-      s.descriptionEn.toLowerCase().includes(lower)
+      s.descriptionEn.toLowerCase().includes(lower) ||
+      s.descriptionEn.toLowerCase().includes(normalized)
   );
 }
 
@@ -564,10 +567,13 @@ async function listServices(req, res, next) {
     const params = [];
 
     if (q) {
+      const normalizedQ = q.replace(/\bboter\b/gi, 'voter');
       sql += ` AND (s.name_bn LIKE ? OR s.name_en LIKE ?
-                 OR s.description_bn LIKE ? OR s.description_en LIKE ?)`;
+                 OR s.description_bn LIKE ? OR s.description_en LIKE ?
+                 OR s.name_en LIKE ? OR s.description_en LIKE ?)`;
       const like = `%${escapeLike(q)}%`;
-      params.push(like, like, like, like);
+      const normLike = `%${escapeLike(normalizedQ)}%`;
+      params.push(like, like, like, like, normLike, normLike);
     }
     sql += ' ORDER BY c.id, s.is_priority DESC, s.id';
 
