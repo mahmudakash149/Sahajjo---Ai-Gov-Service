@@ -4,6 +4,7 @@ const cors = require('cors');
 const authRoutes = require('./routes/auth');
 const serviceRoutes = require('./routes/services');
 const requestRoutes = require('./routes/requests');
+const documentRoutes = require('./routes/documents');
 
 const app = express();
 
@@ -16,6 +17,7 @@ app.get('/health', (_req, res) => res.json({ status: 'ok' }));
 app.use('/api/auth', authRoutes);
 app.use('/api/services', serviceRoutes);
 app.use('/api/requests', requestRoutes);
+app.use('/api/documents', documentRoutes);
 
 app.use((_req, res) => res.status(404).json({ message: 'Not found' }));
 
@@ -23,6 +25,9 @@ app.use((_req, res) => res.status(404).json({ message: 'Not found' }));
 app.use((err, _req, res, _next) => {
   if (err.type === 'entity.parse.failed') {
     return res.status(400).json({ message: 'Malformed JSON' });
+  }
+  if (err.name === 'MulterError' || (err.message && err.message.startsWith('Unsupported file type'))) {
+    return res.status(400).json({ message: err.message });
   }
   console.error(err);
   res.status(500).json({ message: 'Internal server error' });
