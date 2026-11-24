@@ -76,6 +76,25 @@ CREATE TABLE IF NOT EXISTS service_requests (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 `;
 
+const CREATE_DOCUMENTS_TABLE = `
+CREATE TABLE IF NOT EXISTS request_documents (
+  id           BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  request_id   BIGINT UNSIGNED NOT NULL,
+  user_id      BIGINT UNSIGNED NOT NULL,
+  doc_type     VARCHAR(50)     NOT NULL,
+  file_name    VARCHAR(255)    NOT NULL,
+  file_size    INT UNSIGNED    NOT NULL DEFAULT 0,
+  mime_type    VARCHAR(100)    NOT NULL,
+  s3_bucket    VARCHAR(100)    NOT NULL,
+  s3_key       VARCHAR(500)    NOT NULL,
+  ocr_data     JSON            NULL,
+  created_at   TIMESTAMP       NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (id),
+  KEY idx_docs_request (request_id),
+  KEY idx_docs_user (user_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+`;
+
 const SEED_CATEGORIES = [
   [1, 'পরিচয় ও নিবন্ধন', 'Identity & Registration', 'জন্ম, মৃত্যু ও জাতীয় পরিচয়পত্র সংক্রান্ত সেবা', 'Birth, death and national ID services'],
   [2, 'ভ্রমণ ও যানবাহন',  'Travel & Transport',      'পাসপোর্ট ও ড্রাইভিং লাইসেন্স সংক্রান্ত সেবা', 'Passport and driving license services'],
@@ -130,6 +149,10 @@ async function ensureRequestsTable() {
   return ensureTable('service_requests', CREATE_REQUESTS_TABLE);
 }
 
+async function ensureDocumentsTable() {
+  return ensureTable('request_documents', CREATE_DOCUMENTS_TABLE);
+}
+
 async function initDatabase() {
   try {
     // 1. Ensure core auth & users tables
@@ -166,8 +189,9 @@ async function initDatabase() {
       }
     }
 
-    // 5. Ensure service_requests table
+    // 5. Ensure service_requests & request_documents tables
     await ensureTable('service_requests', CREATE_REQUESTS_TABLE);
+    await ensureTable('request_documents', CREATE_DOCUMENTS_TABLE);
 
     console.log('[initDb] Database schema and tables verified successfully.');
     return true;
@@ -180,5 +204,7 @@ async function initDatabase() {
 module.exports = {
   initDatabase,
   ensureRequestsTable,
+  ensureDocumentsTable,
   CREATE_REQUESTS_TABLE,
+  CREATE_DOCUMENTS_TABLE,
 };
