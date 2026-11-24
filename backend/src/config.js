@@ -30,4 +30,12 @@ module.exports = {
   bcryptRounds: parseInt(process.env.BCRYPT_ROUNDS || '12', 10),
   maxFailedLogins: parseInt(process.env.MAX_FAILED_LOGINS || '5', 10),
   lockMinutes: parseInt(process.env.LOCK_MINUTES || '15', 10),
+  s3: {
+    endpoint: process.env.S3_ENDPOINT || 'http://localhost:8333',
+    region: process.env.S3_REGION || 'us-east-1',
+    bucket: process.env.S3_BUCKET || 'sahajjo-documents',
+    accessKey: process.env.S3_ACCESS_KEY || 'sahajjo_s3_key',
+    secretKey: process.env.S3_SECRET_KEY || 'sahajjo_s3_secret_2026',
+    forcePathStyle: (process.env.S3_FORCE_PATH_STYLE || 'true') === 'true',
+  },
 };
