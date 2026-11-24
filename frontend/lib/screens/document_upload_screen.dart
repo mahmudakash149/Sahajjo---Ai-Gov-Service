@@ -1,3 +1,4 @@
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/auth_provider.dart';
@@ -27,7 +28,10 @@ class DocumentUploadScreen extends StatefulWidget {
 class _DocumentUploadScreenState extends State<DocumentUploadScreen> {
   String _selectedDocType = 'NID';
   final List<Map<String, dynamic>> _uploadedFiles = [];
-  bool _showReport = false;
+  Map<String, dynamic>? _readinessReport;
+  bool _loadingDocs = true;
+  bool _uploading = false;
+  bool _checkingReadiness = false;
 
   final List<Map<String, String>> _docTypes = [
     {'key': 'NID', 'bn': 'জাতীয় পরিচয়পত্র (NID)', 'en': 'National ID (NID)'},
@@ -38,57 +42,167 @@ class _DocumentUploadScreenState extends State<DocumentUploadScreen> {
     {'key': 'OTHER', 'bn': 'অন্যান্য নথি', 'en': 'Other Document'},
   ];
 
-  void _simulateUpload() {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) => _loadDocuments());
+  }
+
+  String _docTitle(String docType, bool isBn) {
+    final match = _docTypes.firstWhere(
+      (d) => d['key'] == docType,
+      orElse: () => _docTypes.last,
+    );
+    return isBn ? match['bn']! : match['en']!;
+  }
+
+  String _formatBytes(dynamic bytesVal) {
+    final bytes = int.tryParse(bytesVal?.toString() ?? '0') ?? 0;
+    if (bytes >= 1024 * 1024) {
+      return '${(bytes / (1024 * 1024)).toStringAsFixed(1)} MB';
+    }
+    if (bytes >= 1024) {
+      return '${(bytes / 1024).toStringAsFixed(0)} KB';
+    }
+    return '$bytes B';
+  }
+
+  String _inferMimeType(String fileName) {
+    final lower = fileName.toLowerCase();
+    if (lower.endsWith('.png')) return 'image/png';
+    if (lower.endsWith('.webp')) return 'image/webp';
+    if (lower.endsWith('.pdf')) return 'application/pdf';
+    return 'image/jpeg';
+  }
+
+  Future<void> _loadDocuments() async {
+    try {
+      final auth = context.read<AuthProvider>();
+      final docs = await auth.fetchRequestDocuments(widget.requestId);
+      if (!mounted) return;
+      setState(() {
+        _uploadedFiles
+          ..clear()
+          ..addAll(docs);
+        _loadingDocs = false;
+      });
+    } catch (_) {
+      if (!mounted) return;
+      setState(() => _loadingDocs = false);
+    }
+  }
+
+  Future<void> _pickAndUploadDocument() async {
     final auth = context.read<AuthProvider>();
     final isBn = auth.lang == 'bn';
 
-    final selectedObj = _docTypes.firstWhere(
-      (d) => d['key'] == _selectedDocType,
-      orElse: () => _docTypes[0],
+    final result = await FilePicker.platform.pickFiles(
+      type: FileType.custom,
+      allowedExtensions: ['jpg', 'jpeg', 'png', 'webp', 'pdf'],
+      withData: true,
     );
 
-    final title = isBn ? selectedObj['bn']! : selectedObj['en']!;
-
-    // Simulated OCR extraction data
-    String extractedName = isBn ? 'মোঃ আকাশ মাহমুদ' : 'Md. Akash Mahmud';
-    String extractedDate = '1998-05-12';
-
-    // If uploading educational cert, simulate a slight name mismatch to demonstrate FR14
-    if (_selectedDocType == 'EDUCATIONAL') {
-      extractedName = isBn ? 'আকাশ মাহমুদ' : 'Akash Mahmud'; // Missing "Md."
+    if (result == null || result.files.isEmpty) return;
+    final picked = result.files.first;
+    final bytes = picked.bytes;
+    if (bytes == null || bytes.isEmpty) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(isBn ? 'ফাইল পড়া যায়নি।' : 'Could not read selected file.'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
     }
 
-    setState(() {
-      _uploadedFiles.add({
-        'type': _selectedDocType,
-        'title': title,
-        'fileName': '${_selectedDocType.toLowerCase()}_sample_${_uploadedFiles.length + 1}.jpg',
-        'fileSize': '1.2 MB',
-        'uploadedAt': 'Just now',
-        'ocrName': extractedName,
-        'ocrDate': extractedDate,
-      });
-      _showReport = false;
-    });
+    setState(() => _uploading = true);
+    try {
+      final res = await auth.uploadDocument(
+        requestId: widget.requestId,
+        docType: _selectedDocType,
+        fileName: picked.name,
+        bytes: bytes,
+        mimeType: _inferMimeType(picked.name),
+      );
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(
-          isBn
-              ? 'ডকুমেন্ট সফলভাবে আপলোড ও ওসিআর (OCR) সম্পন্ন হয়েছে!'
-              : 'Document uploaded and OCR extracted successfully!',
+      final doc = Map<String, dynamic>.from(res['document'] ?? {});
+      if (!mounted) return;
+      setState(() {
+        _uploadedFiles.add(doc);
+        _readinessReport = null;
+        _uploading = false;
+      });
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            isBn
+                ? 'ডকুমেন্ট S3 স্টোরেজে আপলোড ও OCR সম্পন্ন হয়েছে!'
+                : 'Document uploaded to S3 and OCR extracted successfully!',
+          ),
+          backgroundColor: const Color(0xFF006A4E),
+          duration: const Duration(seconds: 2),
         ),
-        backgroundColor: const Color(0xFF006A4E),
-        duration: const Duration(seconds: 2),
-      ),
-    );
+      );
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _uploading = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            isBn ? 'আপলোড ব্যর্থ হয়েছে: $e' : 'Upload failed: $e',
+          ),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
   }
 
-  void _removeDoc(int index) {
+  Future<void> _removeDoc(int index) async {
+    final auth = context.read<AuthProvider>();
+    final doc = _uploadedFiles[index];
+    final docId = doc['id'];
+
     setState(() {
       _uploadedFiles.removeAt(index);
-      _showReport = false;
+      _readinessReport = null;
     });
+
+    if (docId != null) {
+      try {
+        await auth.deleteDocument(docId);
+      } catch (_) {
+        // Ignore delete error if already removed
+      }
+    }
+  }
+
+  Future<void> _checkReadiness() async {
+    final auth = context.read<AuthProvider>();
+    final isBn = auth.lang == 'bn';
+    setState(() => _checkingReadiness = true);
+
+    try {
+      final report = await auth.generateReadinessReport(
+        requestId: widget.requestId,
+        requiredDocuments: widget.requiredDocuments,
+      );
+      if (!mounted) return;
+      setState(() {
+        _readinessReport = report;
+        _checkingReadiness = false;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _checkingReadiness = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(isBn ? 'রিপোর্ট তৈরি ব্যর্থ: $e' : 'Failed to generate report: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
   }
 
   @override
@@ -234,9 +348,11 @@ class _DocumentUploadScreenState extends State<DocumentUploadScreen> {
                       ),
                     );
                   }).toList(),
-                  onChanged: (val) {
-                    if (val != null) setState(() => _selectedDocType = val);
-                  },
+                  onChanged: _uploading
+                      ? null
+                      : (val) {
+                          if (val != null) setState(() => _selectedDocType = val);
+                        },
                 ),
                 const SizedBox(height: 14),
                 SizedBox(
@@ -247,9 +363,19 @@ class _DocumentUploadScreenState extends State<DocumentUploadScreen> {
                       padding: const EdgeInsets.symmetric(vertical: 12),
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                     ),
-                    onPressed: _simulateUpload,
-                    icon: const Icon(Icons.add_photo_alternate_outlined, size: 18),
-                    label: Text(isBn ? 'নথি নির্বাচন ও আপলোড করুন' : 'Select & Upload Document'),
+                    onPressed: _uploading ? null : _pickAndUploadDocument,
+                    icon: _uploading
+                        ? const SizedBox(
+                            width: 18,
+                            height: 18,
+                            child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                          )
+                        : const Icon(Icons.add_photo_alternate_outlined, size: 18),
+                    label: Text(
+                      _uploading
+                          ? (isBn ? 'আপলোড ও OCR চলছে...' : 'Uploading & Running OCR...')
+                          : (isBn ? 'নথি নির্বাচন ও আপলোড করুন' : 'Select & Upload Document'),
+                    ),
                   ),
                 ),
               ],
@@ -275,7 +401,7 @@ class _DocumentUploadScreenState extends State<DocumentUploadScreen> {
                     border: Border.all(color: Colors.green.shade200),
                   ),
                   child: Text(
-                    isBn ? 'OCR সক্রিয়' : 'OCR Active',
+                    isBn ? 'S3 + OCR সক্রিয়' : 'S3 + OCR Active',
                     style: TextStyle(fontSize: 10.5, color: Colors.green.shade800, fontWeight: FontWeight.bold),
                   ),
                 ),
@@ -283,7 +409,12 @@ class _DocumentUploadScreenState extends State<DocumentUploadScreen> {
           ),
           const SizedBox(height: 8),
 
-          if (_uploadedFiles.isEmpty)
+          if (_loadingDocs)
+            const Padding(
+              padding: EdgeInsets.all(24),
+              child: Center(child: CircularProgressIndicator()),
+            )
+          else if (_uploadedFiles.isEmpty)
             Container(
               padding: const EdgeInsets.all(24),
               decoration: BoxDecoration(
@@ -308,6 +439,13 @@ class _DocumentUploadScreenState extends State<DocumentUploadScreen> {
             ..._uploadedFiles.asMap().entries.map((entry) {
               final idx = entry.key;
               final file = entry.value;
+              final docType = (file['docType'] ?? 'OTHER').toString();
+              final ocr = file['ocrData'] is Map
+                  ? Map<String, dynamic>.from(file['ocrData'] as Map)
+                  : <String, dynamic>{};
+              final ocrName = ocr['fullName']?.toString() ?? (isBn ? 'সনাক্ত করা যায়নি' : 'Not detected');
+              final ocrDob = ocr['dateOfBirth']?.toString() ?? 'N/A';
+              final ocrEngine = ocr['ocrEngine']?.toString() ?? 'ocr';
 
               return Card(
                 margin: const EdgeInsets.only(bottom: 10),
@@ -323,31 +461,37 @@ class _DocumentUploadScreenState extends State<DocumentUploadScreen> {
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          Row(
-                            children: [
-                              Container(
-                                padding: const EdgeInsets.all(8),
-                                decoration: BoxDecoration(
-                                  color: const Color(0xFF006A4E).withValues(alpha: 0.1),
-                                  borderRadius: BorderRadius.circular(8),
+                          Expanded(
+                            child: Row(
+                              children: [
+                                Container(
+                                  padding: const EdgeInsets.all(8),
+                                  decoration: BoxDecoration(
+                                    color: const Color(0xFF006A4E).withValues(alpha: 0.1),
+                                    borderRadius: BorderRadius.circular(8),
+                                  ),
+                                  child: const Icon(Icons.description, color: Color(0xFF006A4E), size: 20),
                                 ),
-                                child: const Icon(Icons.description, color: Color(0xFF006A4E), size: 20),
-                              ),
-                              const SizedBox(width: 10),
-                              Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    file['title'],
-                                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13.5),
+                                const SizedBox(width: 10),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        _docTitle(docType, isBn),
+                                        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13.5),
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                      Text(
+                                        '${file['fileName'] ?? ''} • ${_formatBytes(file['fileSize'])}',
+                                        style: TextStyle(fontSize: 11, color: Colors.grey.shade600),
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                    ],
                                   ),
-                                  Text(
-                                    '${file['fileName']} • ${file['fileSize']}',
-                                    style: TextStyle(fontSize: 11, color: Colors.grey.shade600),
-                                  ),
-                                ],
-                              ),
-                            ],
+                                ),
+                              ],
+                            ),
                           ),
                           IconButton(
                             icon: const Icon(Icons.delete_outline, color: Colors.red, size: 20),
@@ -368,12 +512,16 @@ class _DocumentUploadScreenState extends State<DocumentUploadScreen> {
                         child: Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
-                            Text(
-                              'OCR: ${file['ocrName']}',
-                              style: TextStyle(fontSize: 12, color: Colors.grey.shade800, fontWeight: FontWeight.w600),
+                            Expanded(
+                              child: Text(
+                                'OCR ($ocrEngine): $ocrName',
+                                style: TextStyle(fontSize: 12, color: Colors.grey.shade800, fontWeight: FontWeight.w600),
+                                overflow: TextOverflow.ellipsis,
+                              ),
                             ),
+                            const SizedBox(width: 8),
                             Text(
-                              'DOB: ${file['ocrDate']}',
+                              'DOB: $ocrDob',
                               style: TextStyle(fontSize: 11, color: Colors.grey.shade600),
                             ),
                           ],
@@ -397,16 +545,22 @@ class _DocumentUploadScreenState extends State<DocumentUploadScreen> {
                   padding: const EdgeInsets.symmetric(vertical: 14),
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                 ),
-                onPressed: () => setState(() => _showReport = !_showReport),
-                icon: const Icon(Icons.assessment_outlined, size: 18),
+                onPressed: _checkingReadiness ? null : _checkReadiness,
+                icon: _checkingReadiness
+                    ? const SizedBox(
+                        width: 18,
+                        height: 18,
+                        child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                      )
+                    : const Icon(Icons.assessment_outlined, size: 18),
                 label: Text(s.checkReadinessBtn),
               ),
             ),
 
           // FR13, FR14, FR15: Readiness Report View
-          if (_showReport && _uploadedFiles.isNotEmpty) ...[
+          if (_readinessReport != null && _uploadedFiles.isNotEmpty) ...[
             const SizedBox(height: 20),
-            _buildReadinessReportCard(isBn),
+            _buildReadinessReportCard(isBn, _readinessReport!),
           ],
 
           const SizedBox(height: 30),
@@ -415,12 +569,13 @@ class _DocumentUploadScreenState extends State<DocumentUploadScreen> {
     );
   }
 
-  Widget _buildReadinessReportCard(bool isBn) {
+  Widget _buildReadinessReportCard(bool isBn, Map<String, dynamic> report) {
     final s = context.read<AuthProvider>().s;
-    final hasMismatch = _uploadedFiles.any((f) => f['type'] == 'EDUCATIONAL');
-    final totalExpected = widget.requiredDocuments.isNotEmpty ? widget.requiredDocuments.length : 3;
-    final totalUploaded = _uploadedFiles.length;
-    final isReady = totalUploaded >= 2 && !hasMismatch;
+    final isReady = report['isReady'] == true;
+    final missing = (report['missingDocuments'] as List? ?? []).map((e) => e.toString()).toList();
+    final mismatches = (report['mismatches'] as List? ?? [])
+        .map((e) => Map<String, dynamic>.from(e as Map))
+        .toList();
 
     return Container(
       padding: const EdgeInsets.all(16),
@@ -468,17 +623,20 @@ class _DocumentUploadScreenState extends State<DocumentUploadScreen> {
             style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
           ),
           const SizedBox(height: 4),
-          if (totalUploaded >= totalExpected)
+          if (missing.isEmpty)
             Text(
               isBn ? '✓ প্রয়োজনীয় সকল নথি আপলোড করা হয়েছে।' : '✓ All expected documents uploaded.',
               style: TextStyle(fontSize: 12.5, color: Colors.green.shade800),
             )
           else
-            Text(
-              isBn
-                  ? '⚠️ এখনও ${(totalExpected - totalUploaded).clamp(1, 10)} টি আবশ্যক নথি অনুপস্থিত রয়েছে।'
-                  : '⚠️ Still missing ${(totalExpected - totalUploaded).clamp(1, 10)} required document(s).',
-              style: TextStyle(fontSize: 12.5, color: Colors.amber.shade900),
+            ...missing.map(
+              (m) => Padding(
+                padding: const EdgeInsets.only(bottom: 4),
+                child: Text(
+                  '⚠️ $m',
+                  style: TextStyle(fontSize: 12.5, color: Colors.amber.shade900),
+                ),
+              ),
             ),
 
           const SizedBox(height: 12),
@@ -489,19 +647,20 @@ class _DocumentUploadScreenState extends State<DocumentUploadScreen> {
             style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
           ),
           const SizedBox(height: 4),
-          if (hasMismatch)
-            Container(
-              padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                color: Colors.red.shade50,
-                borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: Colors.red.shade200),
-              ),
-              child: Text(
-                isBn
-                    ? '⚠️ সতর্কবার্তা: শিক্ষাগত সনদের নামের সাথে ("Akash Mahmud") জাতীয় পরিচয়পত্রের নামের বানান ("Md. Akash Mahmud") হুবহু মিল নেই। যাচাই করুন।'
-                    : '⚠️ Warning: Name spelling on Educational Certificate ("Akash Mahmud") does not strictly match NID ("Md. Akash Mahmud"). Please review.',
-                style: TextStyle(fontSize: 12, color: Colors.red.shade900, height: 1.3),
+          if (mismatches.isNotEmpty)
+            ...mismatches.map(
+              (mm) => Container(
+                margin: const EdgeInsets.only(bottom: 6),
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: Colors.red.shade50,
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: Colors.red.shade200),
+                ),
+                child: Text(
+                  '⚠️ ${isBn ? (mm['messageBn'] ?? mm['messageEn']) : (mm['messageEn'] ?? mm['messageBn'])}',
+                  style: TextStyle(fontSize: 12, color: Colors.red.shade900, height: 1.3),
+                ),
               ),
             )
           else
