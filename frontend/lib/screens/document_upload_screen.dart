@@ -26,33 +26,81 @@ class DocumentUploadScreen extends StatefulWidget {
 }
 
 class _DocumentUploadScreenState extends State<DocumentUploadScreen> {
-  String _selectedDocType = 'NID';
+  late String _selectedDocType;
+  late List<Map<String, String>> _docTypes;
   final List<Map<String, dynamic>> _uploadedFiles = [];
   Map<String, dynamic>? _readinessReport;
   bool _loadingDocs = true;
   bool _uploading = false;
   bool _checkingReadiness = false;
 
-  final List<Map<String, String>> _docTypes = [
-    {'key': 'NID', 'bn': 'জাতীয় পরিচয়পত্র (NID)', 'en': 'National ID (NID)'},
-    {'key': 'BIRTH_CERT', 'bn': 'অনলাইন জন্ম নিবন্ধন সনদ', 'en': 'Online Birth Certificate'},
-    {'key': 'EDUCATIONAL', 'bn': 'শিক্ষাগত সনদ (SSC/HSC)', 'en': 'Educational Certificate (SSC/HSC)'},
-    {'key': 'CITIZENSHIP', 'bn': 'নাগরিকত্ব প্রত্যয়নপত্র', 'en': 'Citizenship Certificate'},
-    {'key': 'UTILITY_BILL', 'bn': 'বিদ্যুৎ/পানি বিল (ঠিকানা প্রমাণ)', 'en': 'Utility Bill (Address Proof)'},
-    {'key': 'OTHER', 'bn': 'অন্যান্য নথি', 'en': 'Other Document'},
-  ];
+  static const Map<String, Map<String, String>> _allDocTypeCatalog = {
+    'NID': {'key': 'NID', 'bn': 'জাতীয় পরিচয়পত্র (NID)', 'en': 'National ID (NID)'},
+    'BIRTH_CERT': {'key': 'BIRTH_CERT', 'bn': 'অনলাইন জন্ম নিবন্ধন সনদ', 'en': 'Online Birth Certificate'},
+    'PHOTO': {'key': 'PHOTO', 'bn': 'পাসপোর্ট সাইজ ছবি', 'en': 'Passport Size Photograph'},
+    'CHALLAN': {'key': 'CHALLAN', 'bn': 'পেমেন্ট রশিদ / চালান কপি', 'en': 'Payment Receipt / Challan'},
+    'EDUCATIONAL': {'key': 'EDUCATIONAL', 'bn': 'শিক্ষাগত সনদ (SSC/HSC)', 'en': 'Educational Certificate (SSC/HSC)'},
+    'CITIZENSHIP': {'key': 'CITIZENSHIP', 'bn': 'নাগরিকত্ব প্রত্যয়নপত্র', 'en': 'Citizenship Certificate'},
+    'UTILITY_BILL': {'key': 'UTILITY_BILL', 'bn': 'বিদ্যুৎ/পানি বিল বা ঠিকানা প্রমাণ', 'en': 'Utility Bill / Address Proof'},
+    'PASSPORT': {'key': 'PASSPORT', 'bn': 'পাসপোর্ট কপি', 'en': 'Passport Copy'},
+    'LAND_DEED': {'key': 'LAND_DEED', 'bn': 'জমির দলিল / খতিয়ান / নামজারি', 'en': 'Land Deed / Khatian / Mutation'},
+    'TRADE_LICENSE': {'key': 'TRADE_LICENSE', 'bn': 'ট্রেড লাইসেন্স / ব্যবসার নথি', 'en': 'Trade License / Business Doc'},
+    'MEDICAL_CERT': {'key': 'MEDICAL_CERT', 'bn': 'টিকা কার্ড / মেডিকেল সনদ', 'en': 'EPI Card / Medical Certificate'},
+    'DRIVING_LICENSE': {'key': 'DRIVING_LICENSE', 'bn': 'ড্রাইভিং / লার্নার লাইসেন্স', 'en': 'Driving / Learner License'},
+    'TIN_CERT': {'key': 'TIN_CERT', 'bn': 'টিআইএন (TIN) সনদ', 'en': 'TIN Certificate'},
+    'OTHER': {'key': 'OTHER', 'bn': 'অন্যান্য নথি', 'en': 'Other Document'},
+  };
+
+  static const Map<int, List<String>> _serviceDocTypeKeys = {
+    1: ['BIRTH_CERT', 'NID', 'MEDICAL_CERT', 'UTILITY_BILL', 'PHOTO', 'CHALLAN'],
+    2: ['NID', 'BIRTH_CERT', 'EDUCATIONAL', 'CITIZENSHIP', 'UTILITY_BILL', 'PHOTO', 'CHALLAN'],
+    3: ['NID', 'BIRTH_CERT', 'PASSPORT', 'CITIZENSHIP', 'UTILITY_BILL', 'PHOTO', 'CHALLAN'],
+    4: ['NID', 'LAND_DEED', 'UTILITY_BILL', 'PHOTO', 'CHALLAN'],
+    5: ['NID', 'TRADE_LICENSE', 'UTILITY_BILL', 'PHOTO', 'CHALLAN'],
+    6: ['NID', 'BIRTH_CERT', 'MEDICAL_CERT', 'CITIZENSHIP', 'CHALLAN'],
+    7: ['NID', 'DRIVING_LICENSE', 'MEDICAL_CERT', 'EDUCATIONAL', 'PHOTO', 'CHALLAN'],
+    8: ['NID', 'TIN_CERT', 'TRADE_LICENSE', 'UTILITY_BILL', 'PHOTO'],
+  };
+
+  List<Map<String, String>> _buildServiceDocTypes() {
+    final keys = List<String>.from(
+      _serviceDocTypeKeys[widget.serviceId] ??
+          ['NID', 'BIRTH_CERT', 'PHOTO', 'CHALLAN', 'EDUCATIONAL', 'CITIZENSHIP', 'UTILITY_BILL'],
+    );
+
+    // Ensure any requiredDocuments keywords are also represented in the dropdown
+    final reqJoined = widget.requiredDocuments.join(' ').toLowerCase();
+    void ensureKey(String key, List<String> triggers) {
+      if (!keys.contains(key) && triggers.any((t) => reqJoined.contains(t))) {
+        keys.add(key);
+      }
+    }
+
+    ensureKey('NID', ['nid', 'national id', 'জাতীয় পরিচয়পত্র', 'এনআইডি']);
+    ensureKey('BIRTH_CERT', ['birth', 'জন্ম']);
+    ensureKey('PHOTO', ['photo', 'ছবি']);
+    ensureKey('CHALLAN', ['challan', 'receipt', 'payment', 'চালান', 'রশিদ']);
+    ensureKey('EDUCATIONAL', ['ssc', 'hsc', 'educational', 'শিক্ষাগত']);
+    ensureKey('CITIZENSHIP', ['citizenship', 'নাগরিকত্ব']);
+    ensureKey('UTILITY_BILL', ['utility', 'holding', 'rental', 'বিল', 'হোল্ডিং']);
+
+    if (!keys.contains('OTHER')) keys.add('OTHER');
+    return keys
+        .where((k) => _allDocTypeCatalog.containsKey(k))
+        .map((k) => _allDocTypeCatalog[k]!)
+        .toList();
+  }
 
   @override
   void initState() {
     super.initState();
+    _docTypes = _buildServiceDocTypes();
+    _selectedDocType = _docTypes.first['key']!;
     WidgetsBinding.instance.addPostFrameCallback((_) => _loadDocuments());
   }
 
   String _docTitle(String docType, bool isBn) {
-    final match = _docTypes.firstWhere(
-      (d) => d['key'] == docType,
-      orElse: () => _docTypes.last,
-    );
+    final match = _allDocTypeCatalog[docType] ?? _allDocTypeCatalog['OTHER']!;
     return isBn ? match['bn']! : match['en']!;
   }
 
@@ -320,7 +368,7 @@ class _DocumentUploadScreenState extends State<DocumentUploadScreen> {
                     const Icon(Icons.cloud_upload_outlined, color: Color(0xFF006A4E), size: 20),
                     const SizedBox(width: 8),
                     Text(
-                      'FR11: ${s.chooseFile}',
+                      s.chooseFile,
                       style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
                     ),
                   ],
@@ -591,7 +639,7 @@ class _DocumentUploadScreenState extends State<DocumentUploadScreen> {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
-                isBn ? 'রেডিনেস রিপোর্ট (FR15)' : 'Readiness Report (FR15)',
+                isBn ? 'রেডিনেস রিপোর্ট' : 'Readiness Report',
                 style: TextStyle(
                   fontWeight: FontWeight.bold,
                   fontSize: 15,
@@ -619,7 +667,7 @@ class _DocumentUploadScreenState extends State<DocumentUploadScreen> {
 
           // FR13: Missing Document Detection
           Text(
-            isBn ? '১. অনুপস্থিত ডকুমেন্টস (FR13):' : '1. Missing Documents (FR13):',
+            isBn ? '১. অনুপস্থিত ডকুমেন্টস:' : '1. Missing Documents:',
             style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
           ),
           const SizedBox(height: 4),
@@ -643,7 +691,7 @@ class _DocumentUploadScreenState extends State<DocumentUploadScreen> {
 
           // FR14: Document Mismatch Detection
           Text(
-            isBn ? '২. তথ্যের গরমিল ও অসঙ্গতি (FR14):' : '2. Information Mismatch (FR14):',
+            isBn ? '২. তথ্যের গরমিল ও অসঙ্গতি:' : '2. Information Mismatch:',
             style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
           ),
           const SizedBox(height: 4),

@@ -134,7 +134,7 @@ class S {
   String get verifyOtpOnly => _t('ওটিপি যাচাই করুন', 'Verify OTP');
 
   // Document Upload & Readiness (FR11 - FR15)
-  String get uploadDocsBtn => _t('কাগজপত্র আপলোড করুন (FR11-FR15)', 'Upload Documents (FR11-FR15)');
+  String get uploadDocsBtn => _t('কাগজপত্র আপলোড করুন', 'Upload Documents');
   String get docUploadTitle => _t('কাগজপত্র আপলোড ও রেডিনেস চেক', 'Document Upload & Readiness Check');
   String get docUploadSubtitle => _t('প্রয়োজনীয় কাগজপত্র আপলোড করে স্বয়ংক্রিয়ভাবে প্রস্তুত কিনা যাচাই করুন', 'Upload required documents to automatically verify your readiness');
   String get selectDocType => _t('ডকুমেন্টের ধরন বেছে নিন', 'Select Document Type');
