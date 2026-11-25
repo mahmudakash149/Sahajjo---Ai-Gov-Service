@@ -50,6 +50,25 @@ test('evaluateReadiness returns ready when all required docs match across Bangla
   assert.equal(report.mismatches.length, 0);
 });
 
+test('evaluateReadiness matches PHOTO and CHALLAN against passport-size photo and receipt requirements', () => {
+  const report = evaluateReadiness({
+    requiredDocuments: [
+      'National ID / Birth Certificate',
+      'Passport size photographs',
+      'Payment receipt/challan',
+    ],
+    uploadedDocs: [
+      { docType: 'NID', ocrData: { fullNameEn: 'Mahmud Akash', dateOfBirth: '2001-01-01' } },
+      { docType: 'PHOTO', ocrData: {} },
+      { docType: 'CHALLAN', ocrData: {} },
+    ],
+  });
+
+  assert.equal(report.isReady, true);
+  assert.equal(report.missingDocuments.length, 0);
+  assert.equal(report.mismatches.length, 0);
+});
+
 test('parseBasicFieldsFromText extracts name, DOB (ignoring Issue Date), and 10/17-digit ID', () => {
   const fields = parseBasicFieldsFromText(
     'Government of Bangladesh\nDate of Issue: 15-02-2021\nName: Md. Akash Mahmud\nDate of Birth: 1998-05-12\nNID No: 1234567890'

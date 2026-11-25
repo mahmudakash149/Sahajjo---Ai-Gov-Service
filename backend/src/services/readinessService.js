@@ -4,6 +4,14 @@ const DOC_TYPE_KEYWORDS = {
   EDUCATIONAL: ['ssc', 'hsc', 'educational', 'academic', 'marksheet', 'শিক্ষাগত', 'এসএসসি', 'এইচএসসি'],
   CITIZENSHIP: ['citizenship', 'chairman', 'ward', 'নাগরিকত্ব', 'প্রত্যয়ন'],
   UTILITY_BILL: ['utility', 'electricity', 'water', 'gas', 'holding', 'rental', 'বিল', 'ঠিকানা', 'হোল্ডিং'],
+  PHOTO: ['photo', 'photograph', 'photographs', 'picture', 'ছবি', 'পাসপোর্ট সাইজ'],
+  CHALLAN: ['challan', 'receipt', 'payment', 'fee', 'চালান', 'রশিদ', 'ফি'],
+  PASSPORT: ['passport', 'পাসপোর্ট'],
+  LAND_DEED: ['dalil', 'deed', 'khatian', 'mutation', 'namjari', 'land', 'দলিল', 'খতিয়ান', 'নামজারি', 'জমি'],
+  TRADE_LICENSE: ['trade', 'business', 'shop', 'ট্রেড', 'ব্যবসা', 'দোকান'],
+  MEDICAL_CERT: ['epi', 'immunization', 'vaccine', 'hospital', 'medical', 'doctor', 'death', 'টিকা', 'হাসপাতাল', 'মেডিকেল', 'ডাক্তার', 'মৃত্যু'],
+  DRIVING_LICENSE: ['driving', 'learner', 'brta', 'ড্রাইভিং', 'লার্নার'],
+  TIN_CERT: ['tin', 'tax', 'টিআইএন', 'কর'],
   OTHER: [],
 };
 
@@ -68,23 +76,32 @@ function namesMismatch(ocrA, ocrB) {
   return normalizeText(nameA) !== normalizeText(nameB);
 }
 
-function matchesRequiredDoc(requiredText, docType) {
+function matchesUploadedDoc(requiredText, doc) {
   const lower = normalizeText(requiredText);
-  const keywords = DOC_TYPE_KEYWORDS[docType] || [];
-  return keywords.some((kw) => lower.includes(kw.toLowerCase()));
+  const keywords = DOC_TYPE_KEYWORDS[doc.docType] || [];
+  if (keywords.some((kw) => lower.includes(kw.toLowerCase()))) {
+    return true;
+  }
+  // Fallback for OTHER: check if filename or OCR rawText shares a meaningful keyword with the requirement
+  if (doc.docType === 'OTHER') {
+    const haystack = normalizeText(`${doc.fileName || ''} ${(doc.ocrData && doc.ocrData.rawText) || ''}`);
+    const reqWords = lower.split(/[^a-z0-9\u0980-\u09FF]+/).filter((w) => w.length >= 3);
+    if (reqWords.some((w) => haystack.includes(w))) {
+      return true;
+    }
+  }
+  return false;
 }
 
 /**
  * Evaluate FR13 (Missing Documents), FR14 (Information Mismatch), and FR15 (Readiness Report).
  */
 function evaluateReadiness({ requiredDocuments = [], uploadedDocs = [] }) {
-  const uploadedTypes = new Set(uploadedDocs.map((d) => d.docType));
-
   // FR13: Missing Document Detection
   const missingDocuments = [];
   if (Array.isArray(requiredDocuments) && requiredDocuments.length > 0) {
     for (const reqDoc of requiredDocuments) {
-      const satisfied = Array.from(uploadedTypes).some((t) => matchesRequiredDoc(reqDoc, t));
+      const satisfied = uploadedDocs.some((doc) => matchesUploadedDoc(reqDoc, doc));
       if (!satisfied) {
         missingDocuments.push(reqDoc);
       }
