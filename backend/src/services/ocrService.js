@@ -11,7 +11,11 @@ const MODEL_NAME = 'gemini-3.5-flash-lite';
  */
 async function extractDocumentFields(buffer, mimeType, docType = 'OTHER', language = 'bn') {
   if (API_KEY && buffer && buffer.length > 0) {
-    const geminiResult = await extractWithGeminiVision(buffer, mimeType, docType, language);
+    let geminiResult = await extractWithGeminiVision(buffer, mimeType, docType, language);
+    if (!geminiResult) {
+      await new Promise((r) => setTimeout(r, 800));
+      geminiResult = await extractWithGeminiVision(buffer, mimeType, docType, language);
+    }
     if (geminiResult) {
       return geminiResult;
     }
@@ -27,6 +31,8 @@ async function extractDocumentFields(buffer, mimeType, docType = 'OTHER', langua
 
   return {
     fullName: null,
+    fullNameEn: null,
+    fullNameBn: null,
     dateOfBirth: null,
     documentNumber: null,
     fatherName: null,
@@ -42,16 +48,25 @@ async function extractWithGeminiVision(buffer, mimeType, docType, language) {
   const supported = ['image/jpeg', 'image/png', 'image/webp', 'application/pdf'];
   const safeMime = supported.includes(mimeType) ? mimeType : 'image/jpeg';
 
-  const prompt = `You are an OCR extraction engine for Bangladesh government service documents (e.g., NID, Birth Certificate, SSC/HSC Certificate, Citizenship Certificate, Utility Bill).
+  const prompt = `You are an OCR extraction engine for Bangladesh government service documents (NID, Online Birth Certificate, Passport, Driving License, SSC/HSC Certificate, Citizenship Certificate, Utility Bill).
 Document Type hint: ${docType}
-Preferred output language context: ${language === 'bn' ? 'Bangla/English' : 'English'}
+Preferred display language context: ${language === 'bn' ? 'Bangla/English' : 'English'}
 
-Extract the key fields visible in this document. If a field is not present or illegible, return null.
-Normalize dateOfBirth to YYYY-MM-DD if possible.
+CRITICAL EXTRACTION RULES:
+1. Names: Bangladesh documents often print the person's name in Bangla (e.g. "মাহমুদ আকাশ") and/or English (e.g. "Mahmud Akash").
+   - Put the English name in "fullNameEn". If ONLY Bangla is printed on the document, transliterate the Bangla name accurately into standard English spelling in "fullNameEn" (e.g., "মাহমুদ আকাশ" -> "Mahmud Akash").
+   - Put the Bangla name in "fullNameBn" (if printed in Bangla, otherwise null).
+   - Set "fullName" to "fullNameEn" if available, otherwise "fullNameBn".
+2. Date of Birth: Extract ONLY the person's Date of Birth (জন্ম তারিখ / Date of Birth / DOB).
+   - NEVER extract Issue Date (প্রদানের তারিখ / Date of Issue), Registration Date (নিবন্ধনের তারিখ / Date of Registration), or Expiry Date.
+   - Normalize "dateOfBirth" strictly to YYYY-MM-DD (convert any Bangla digits ০-৯ to English digits 0-9).
+3. If any field is not present or illegible, return null.
 
-Respond ONLY with valid JSON (no markdown fences):
+Respond ONLY with valid JSON:
 {
   "fullName": "string or null",
+  "fullNameEn": "string or null",
+  "fullNameBn": "string or null",
   "dateOfBirth": "YYYY-MM-DD or null",
   "documentNumber": "string or null",
   "fatherName": "string or null",
@@ -83,6 +98,7 @@ Respond ONLY with valid JSON (no markdown fences):
         generationConfig: {
           temperature: 0.1,
           maxOutputTokens: 700,
+          responseMimeType: 'application/json',
         },
       }),
     });
@@ -97,8 +113,14 @@ Respond ONLY with valid JSON (no markdown fences):
     const cleaned = rawText.replace(/^```json\s*/i, '').replace(/```$/i, '').trim();
     const parsed = JSON.parse(cleaned);
 
+    const fullNameEn = parsed.fullNameEn || null;
+    const fullNameBn = parsed.fullNameBn || null;
+    const fullName = parsed.fullName || fullNameEn || fullNameBn || null;
+
     return {
-      fullName: parsed.fullName || null,
+      fullName,
+      fullNameEn,
+      fullNameBn,
       dateOfBirth: parsed.dateOfBirth || null,
       documentNumber: parsed.documentNumber || null,
       fatherName: parsed.fatherName || null,
@@ -117,7 +139,12 @@ Respond ONLY with valid JSON (no markdown fences):
 async function extractWithTesseract(buffer) {
   try {
     const Tesseract = require('tesseract.js');
-    const result = await Tesseract.recognize(buffer, 'eng');
+    let result;
+    try {
+      result = await Tesseract.recognize(buffer, 'eng+ben');
+    } catch (_langErr) {
+      result = await Tesseract.recognize(buffer, 'eng');
+    }
     const text = (result && result.data && result.data.text ? result.data.text : '').trim();
     const parsed = parseBasicFieldsFromText(text);
     return {
@@ -134,10 +161,17 @@ async function extractWithTesseract(buffer) {
   }
 }
 
+function normalizeBanglaDigits(str) {
+  const map = { '০': '0', '১': '1', '২': '2', '৩': '3', '৪': '4', '৫': '5', '৬': '6', '৭': '7', '৮': '8', '৯': '9' };
+  return String(str || '').replace(/[০-৯]/g, (d) => map[d] || d);
+}
+
 function parseBasicFieldsFromText(text) {
   if (!text) {
     return {
       fullName: null,
+      fullNameEn: null,
+      fullNameBn: null,
       dateOfBirth: null,
       documentNumber: null,
       fatherName: null,
@@ -146,13 +180,38 @@ function parseBasicFieldsFromText(text) {
     };
   }
 
-  const nameMatch = text.match(/(?:Name|নাম)\s*[:\-]\s*([A-Za-z. ]{3,60})/i);
-  const dobMatch = text.match(/(\d{4}-\d{2}-\d{2}|\d{2}[\/\-]\d{2}[\/\-]\d{4}|\d{2}\s+[A-Za-z]{3,9}\s+\d{4})/);
-  const idMatch = text.match(/\b(\d{10}|\d{13}|\d{17})\b/);
+  const normalizedText = normalizeBanglaDigits(text);
+  const nameMatch = normalizedText.match(/(?:Name|নাম)\s*[:\-]\s*([A-Za-z. \u0980-\u09FF]{3,60})/i);
+
+  // Prefer explicit Date of Birth lines and avoid Issue / Registration / Expiry dates
+  const dobLineMatch = normalizedText.match(
+    /(?:Date\s*of\s*Birth|DOB|Birth\s*Date|জন্ম\s*তারিখ)[^\n\r]{0,30}?(\d{4}-\d{2}-\d{2}|\d{2}[\/\-]\d{2}[\/\-]\d{4}|\d{2}\s+[A-Za-z]{3,9}\s+\d{4})/i
+  );
+
+  let dob = dobLineMatch ? dobLineMatch[1].trim() : null;
+  if (!dob) {
+    const lines = normalizedText.split(/\r?\n/);
+    for (const line of lines) {
+      if (/(?:issue|registration|expiry|valid|প্রদান|নিবন্ধন|মেয়াদ)/i.test(line)) {
+        continue;
+      }
+      const m = line.match(/(\d{4}-\d{2}-\d{2}|\d{2}[\/\-]\d{2}[\/\-]\d{4}|\d{2}\s+[A-Za-z]{3,9}\s+\d{4})/);
+      if (m) {
+        dob = m[1].trim();
+        break;
+      }
+    }
+  }
+
+  const idMatch = normalizedText.match(/\b(\d{10}|\d{13}|\d{17})\b/);
+  const extractedName = nameMatch ? nameMatch[1].trim() : null;
+  const isBangla = extractedName ? /[\u0980-\u09FF]/.test(extractedName) : false;
 
   return {
-    fullName: nameMatch ? nameMatch[1].trim() : null,
-    dateOfBirth: dobMatch ? dobMatch[1].trim() : null,
+    fullName: extractedName,
+    fullNameEn: extractedName && !isBangla ? extractedName : null,
+    fullNameBn: extractedName && isBangla ? extractedName : null,
+    dateOfBirth: dob,
     documentNumber: idMatch ? idMatch[1].trim() : null,
     fatherName: null,
     motherName: null,
