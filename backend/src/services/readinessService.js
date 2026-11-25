@@ -14,6 +14,60 @@ function normalizeText(value) {
     .toLowerCase();
 }
 
+function hasBangla(str) {
+  return /[\u0980-\u09FF]/.test(String(str || ''));
+}
+
+function hasLatin(str) {
+  return /[A-Za-z]/.test(String(str || ''));
+}
+
+/**
+ * Normalize dates like DD-MM-YYYY, DD/MM/YYYY, YYYY-MM-DD to YYYY-MM-DD when possible.
+ */
+function normalizeDate(value) {
+  const raw = String(value || '').trim();
+  if (!raw) return '';
+  if (/^\d{4}-\d{2}-\d{2}$/.test(raw)) return raw;
+  const dmy = raw.match(/^(\d{2})[\/\-](\d{2})[\/\-](\d{4})$/);
+  if (dmy) return `${dmy[3]}-${dmy[2]}-${dmy[1]}`;
+  return normalizeText(raw);
+}
+
+/**
+ * Pick the best comparable English name from ocrData, falling back to fullName.
+ */
+function getComparableName(ocrData) {
+  if (!ocrData) return null;
+  return ocrData.fullNameEn || ocrData.fullName || null;
+}
+
+/**
+ * Check if two names are comparable and actually mismatched.
+ * Avoids false mismatch when one document only extracted Bangla and the other only English.
+ */
+function namesMismatch(ocrA, ocrB) {
+  // If both have English names, compare them directly
+  if (ocrA.fullNameEn && ocrB.fullNameEn) {
+    return normalizeText(ocrA.fullNameEn) !== normalizeText(ocrB.fullNameEn);
+  }
+  // If both have Bangla names, compare them directly
+  if (ocrA.fullNameBn && ocrB.fullNameBn) {
+    return normalizeText(ocrA.fullNameBn) !== normalizeText(ocrB.fullNameBn);
+  }
+  const nameA = getComparableName(ocrA);
+  const nameB = getComparableName(ocrB);
+  if (!nameA || !nameB) return false;
+
+  // Different scripts (one pure Bangla, one pure English) without transliteration -> do not false-flag
+  if ((hasBangla(nameA) && !hasLatin(nameA) && hasLatin(nameB) && !hasBangla(nameB)) ||
+      (hasLatin(nameA) && !hasBangla(nameA) && hasBangla(nameB) && !hasLatin(nameB))) {
+    return false;
+  }
+
+  return normalizeText(nameA) !== normalizeText(nameB);
+}
+
 function matchesRequiredDoc(requiredText, docType) {
   const lower = normalizeText(requiredText);
   const keywords = DOC_TYPE_KEYWORDS[docType] || [];
@@ -42,21 +96,22 @@ function evaluateReadiness({ requiredDocuments = [], uploadedDocs = [] }) {
   // FR14: Cross-document Mismatch Detection
   const mismatches = [];
 
-  const docsWithName = uploadedDocs.filter((d) => d.ocrData && d.ocrData.fullName);
+  const docsWithName = uploadedDocs.filter((d) => d.ocrData && getComparableName(d.ocrData));
   if (docsWithName.length >= 2) {
     const baseline = docsWithName[0];
-    const baseNorm = normalizeText(baseline.ocrData.fullName);
     for (let i = 1; i < docsWithName.length; i++) {
       const other = docsWithName[i];
-      if (normalizeText(other.ocrData.fullName) !== baseNorm) {
+      if (namesMismatch(baseline.ocrData, other.ocrData)) {
+        const valA = getComparableName(baseline.ocrData);
+        const valB = getComparableName(other.ocrData);
         mismatches.push({
           field: 'fullName',
           firstDoc: baseline.docType,
-          firstValue: baseline.ocrData.fullName,
+          firstValue: valA,
           secondDoc: other.docType,
-          secondValue: other.ocrData.fullName,
-          messageBn: `নামের বানানে অমিল পাওয়া গেছে: ${baseline.docType} ("${baseline.ocrData.fullName}") বনাম ${other.docType} ("${other.ocrData.fullName}")।`,
-          messageEn: `Name mismatch detected between ${baseline.docType} ("${baseline.ocrData.fullName}") and ${other.docType} ("${other.ocrData.fullName}").`,
+          secondValue: valB,
+          messageBn: `নামের বানানে অমিল পাওয়া গেছে: ${baseline.docType} ("${valA}") বনাম ${other.docType} ("${valB}")।`,
+          messageEn: `Name mismatch detected between ${baseline.docType} ("${valA}") and ${other.docType} ("${valB}").`,
         });
       }
     }
@@ -65,10 +120,10 @@ function evaluateReadiness({ requiredDocuments = [], uploadedDocs = [] }) {
   const docsWithDob = uploadedDocs.filter((d) => d.ocrData && d.ocrData.dateOfBirth);
   if (docsWithDob.length >= 2) {
     const baseline = docsWithDob[0];
-    const baseDob = normalizeText(baseline.ocrData.dateOfBirth);
+    const baseDob = normalizeDate(baseline.ocrData.dateOfBirth);
     for (let i = 1; i < docsWithDob.length; i++) {
       const other = docsWithDob[i];
-      if (normalizeText(other.ocrData.dateOfBirth) !== baseDob) {
+      if (normalizeDate(other.ocrData.dateOfBirth) !== baseDob) {
         mismatches.push({
           field: 'dateOfBirth',
           firstDoc: baseline.docType,
