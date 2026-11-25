@@ -26,17 +26,17 @@
     "createdAt": "2026-11-11T18:17:07.340Z"
   },
   {
-    "id": 4,
+    "id": 2,
     "userId": "1",
-    "requestText": "ami nid card banabo",
+    "requestText": "Boter id lagbe",
     "language": "en",
     "status": "processed",
     "aiDiagnosis": {
-      "serviceId": 2,
-      "serviceName": "NID Correction",
-      "serviceNameBn": "এনআইডি তথ্য সংশোধন",
-      "confidence": 0.96,
-      "summary": "Your request matches the \"NID Correction\" service.",
+      "serviceId": 1,
+      "serviceName": "Birth Registration",
+      "serviceNameBn": "জন্ম নিবন্ধন",
+      "confidence": 0.75,
+      "summary": "Your request matches the \"Birth Registration\" service.",
       "requiredDocuments": [
         "National ID / Birth Certificate",
         "Passport size photographs",
@@ -49,7 +49,59 @@
       ],
       "aiPowered": false
     },
-    "createdAt": "2026-11-24T17:44:53.422Z"
+    "createdAt": "2026-11-11T18:48:01.367Z"
+  },
+  {
+    "id": 3,
+    "userId": "1",
+    "requestText": "Tin certi",
+    "language": "en",
+    "status": "processed",
+    "aiDiagnosis": {
+      "serviceId": 8,
+      "serviceName": "TIN Registration",
+      "serviceNameBn": "টিআইএন নিবন্ধন",
+      "confidence": 0.98,
+      "summary": "Assistance for obtaining a Taxpayer Identification Number (TIN) certificate for legal business and income tax purposes in Bangladesh.",
+      "requiredDocuments": [
+        "Valid National ID (NID) card",
+        "Active mobile phone number registered under your name",
+        "Email address"
+      ],
+      "steps": [
+        "Visit the official Bangladesh Income Tax portal or National Board of Revenue (NBR) website.",
+        "Register for a new account using your NID and mobile number, then fill out the TIN application form.",
+        "Submit the application to instantly generate and download your official TIN certificate."
+      ],
+      "aiPowered": true
+    },
+    "createdAt": "2026-11-12T18:53:26.169Z"
+  },
+  {
+    "id": 4,
+    "userId": "1",
+    "requestText": "I want to apply for a new passport. What are the required documents and fees?",
+    "language": "en",
+    "status": "processed",
+    "aiDiagnosis": {
+      "serviceId": 3,
+      "serviceName": "Passport Services",
+      "serviceNameBn": "পাসপোর্ট সেবা",
+      "confidence": 0.95,
+      "summary": "Your request matches the \"Passport Services\" service.",
+      "requiredDocuments": [
+        "National ID / Birth Certificate",
+        "Passport size photographs",
+        "Payment receipt/challan"
+      ],
+      "steps": [
+        "Fill out the application on the official portal",
+        "Pay the requisite government fees",
+        "Submit documents and receive approval"
+      ],
+      "aiPowered": false
+    },
+    "createdAt": "2026-11-12T19:19:19.498Z"
   },
   {
     "id": 5,
@@ -333,46 +385,6 @@
     "updatedAt": "2026-11-25T19:49:56.713Z"
   },
   {
-    "id": 11,
-    "userId": 1,
-    "requestText": "birth certificate",
-    "language": "en",
-    "status": "refined",
-    "aiDiagnosis": {
-      "serviceId": 1,
-      "serviceName": "Birth Registration",
-      "serviceNameBn": "জন্ম নিবন্ধন",
-      "confidence": 0.98,
-      "summary": "Refined procedure generated for \"Birth Registration\" based on your specific selections.",
-      "requiredDocuments": [
-        "National ID & digital birth registration copy",
-        "Government payment challan & attested proofs"
-      ],
-      "steps": [
-        "Complete online application as per your selected category",
-        "Pay government fee and retain challan receipt",
-        "Submit hard copy with original proofs to the registrar office"
-      ],
-      "followUpQuestions": [],
-      "clarifiedDetails": [
-        {
-          "questionId": "q1",
-          "question": "What type of birth registration service do you need?",
-          "answer": "New Registration"
-        },
-        {
-          "questionId": "q2",
-          "question": "What is the age of the person requiring the birth registration?",
-          "answer": "Above 18 years (Adult)"
-        }
-      ],
-      "aiPowered": false,
-      "refined": true
-    },
-    "createdAt": "2026-11-25T19:51:58.000Z",
-    "updatedAt": "2026-11-25T19:52:20.498Z"
-  },
-  {
     "id": 12,
     "userId": 1,
     "requestText": "ami nijer jonno birth certificate banabo",
@@ -549,5 +561,31 @@
     },
     "createdAt": "2026-11-25T20:07:07.000Z",
     "updatedAt": "2026-11-25T20:07:26.474Z"
+  },
+  {
+    "id": 16,
+    "userId": "1",
+    "requestText": "ami nid card banabo",
+    "language": "en",
+    "status": "processed",
+    "aiDiagnosis": {
+      "serviceId": 2,
+      "serviceName": "NID Correction",
+      "serviceNameBn": "এনআইডি তথ্য সংশোধন",
+      "confidence": 0.96,
+      "summary": "Your request matches the \"NID Correction\" service.",
+      "requiredDocuments": [
+        "National ID / Birth Certificate",
+        "Passport size photographs",
+        "Payment receipt/challan"
+      ],
+      "steps": [
+        "Fill out the application on the official portal",
+        "Pay the requisite government fees",
+        "Submit documents and receive approval"
+      ],
+      "aiPowered": false
+    },
+    "createdAt": "2026-11-24T17:44:53.422Z"
   }
 ]

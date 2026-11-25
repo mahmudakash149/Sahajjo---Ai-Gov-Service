@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/auth_provider.dart';
 import '../services/api_service.dart';
+import 'document_upload_screen.dart';
 
 /// FR4 + AI Service Identification Screen
 /// Accepts citizen requests in Bangla/English and displays Gemini AI service identification.
@@ -102,6 +103,7 @@ class _RequestInputScreenState extends State<RequestInputScreen> {
         trackingId: trackingId,
         initialAiDiagnosis: aiDiagnosis,
         onRefined: _loadHistory,
+      ),
       ),
     );
   }
@@ -446,6 +448,39 @@ class _RequestInputScreenState extends State<RequestInputScreen> {
                                 ),
                                 const Icon(Icons.chevron_right, size: 16, color: Colors.grey),
                               ],
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          SizedBox(
+                            width: double.infinity,
+                            child: OutlinedButton.icon(
+                              style: OutlinedButton.styleFrom(
+                                foregroundColor: const Color(0xFF006A4E),
+                                side: const BorderSide(color: Color(0xFF006A4E), width: 1.2),
+                                padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
+                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                              ),
+                              onPressed: () {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (_) => DocumentUploadScreen(
+                                      requestId: reqId,
+                                      requestText: text,
+                                      serviceId: (ai != null && ai['serviceId'] is int) ? ai['serviceId'] : 0,
+                                      serviceName: matchedServiceName,
+                                      requiredDocuments: (ai != null && ai['requiredDocuments'] is List)
+                                          ? (ai['requiredDocuments'] as List).map((e) => e.toString()).toList()
+                                          : [],
+                                    ),
+                                  ),
+                                );
+                              },
+                              icon: const Icon(Icons.upload_file_outlined, size: 16),
+                              label: Text(
+                                s.uploadDocsBtn,
+                                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12),
+                              ),
                             ),
                           ),
                         ],
@@ -996,6 +1031,38 @@ class _GuidanceBottomSheetWidgetState extends State<GuidanceBottomSheetWidget> {
                       child: Text(doc, style: const TextStyle(fontSize: 13.5, height: 1.3)),
                     ),
                   ],
+                ),
+              ),
+            ),
+            const SizedBox(height: 8),
+            SizedBox(
+              width: double.infinity,
+              child: FilledButton.tonalIcon(
+                style: FilledButton.styleFrom(
+                  backgroundColor: const Color(0xFF006A4E).withValues(alpha: 0.12),
+                  foregroundColor: const Color(0xFF006A4E),
+                  padding: const EdgeInsets.symmetric(vertical: 10),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                ),
+                onPressed: () {
+                  Navigator.pop(context);
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => DocumentUploadScreen(
+                        requestId: widget.trackingId,
+                        requestText: '',
+                        serviceId: _ai['serviceId'] ?? 0,
+                        serviceName: serviceName,
+                        requiredDocuments: docs,
+                      ),
+                    ),
+                  );
+                },
+                icon: const Icon(Icons.upload_file_outlined, size: 18),
+                label: Text(
+                  s.uploadDocsBtn,
+                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
                 ),
               ),
             ),

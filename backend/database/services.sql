@@ -38,7 +38,7 @@ INSERT IGNORE INTO service_categories (id, name_bn, name_en, description_bn, des
 
 INSERT IGNORE INTO services (id, category_id, name_bn, name_en, description_bn, description_en, is_priority) VALUES
   (1, 1, 'জন্ম নিবন্ধন',            'Birth Registration',   'নতুন জন্ম নিবন্ধন করা বা জন্ম নিবন্ধন সনদ সংশোধন করা।', 'Register a new birth or correct a birth registration certificate.', 1),
-  (2, 1, 'এনআইডি তথ্য সংশোধন',      'NID Correction',       'জাতীয় পরিচয়পত্রের নাম, ঠিকানা বা অন্য তথ্য সংশোধন করা।', 'Correct the name, address or other details on a National ID card.', 1),
+  (2, 1, 'এনআইডি তথ্য সংশোধন',      'NID Correction',       'জাতীয় পরিচয়পত্র (ভোটার আইডি কার্ড) এর নাম, ঠিকানা বা অন্য তথ্য সংশোধন করা।', 'Correct the name, address or other details on a National ID (Voter ID) card.', 1),
   (3, 2, 'পাসপোর্ট সেবা',           'Passport Services',    'নতুন পাসপোর্টের আবেদন, নবায়ন বা তথ্য সংশোধন।', 'Apply for a new passport, renew it, or correct its details.', 1),
   (4, 3, 'ই-নামজারি',               'e-Mutation',           'জমির মালিকানা পরিবর্তনের পর অনলাইনে নামজারির আবেদন।', 'Apply online for land mutation after a change of ownership.', 1),
   (5, 4, 'ট্রেড লাইসেন্স',           'Trade License',        'ব্যবসা চালানোর জন্য নতুন ট্রেড লাইসেন্স বা নবায়ন।', 'Get a new trade license or renew one to run a business.', 1),
