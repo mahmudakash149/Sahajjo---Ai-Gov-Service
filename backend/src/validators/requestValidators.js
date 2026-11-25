@@ -12,6 +12,24 @@ const createRequestRules = [
     .isIn(['bn', 'en']).withMessage('Language must be either bn or en'),
 ];
 
+// FR6: Validation for follow-up question responses
+const followUpRules = [
+  body('answers')
+    .custom((value) => {
+      if (!value) {
+        throw new Error('Answers must be provided');
+      }
+      if (Array.isArray(value)) {
+        if (value.length === 0) throw new Error('Answers list cannot be empty');
+        return true;
+      }
+      if (typeof value === 'object' && Object.keys(value).length > 0) {
+        return true;
+      }
+      throw new Error('Answers must be an array or key-value object');
+    }),
+];
+
 function validate(req, res, next) {
   const result = validationResult(req);
   if (result.isEmpty()) return next();
@@ -24,5 +42,6 @@ function validate(req, res, next) {
 
 module.exports = {
   createRequestRules,
+  followUpRules,
   validate,
 };

@@ -113,6 +113,12 @@ class AuthProvider extends ChangeNotifier {
     return await _api.submitServiceRequest(_token!, text, language: _lang);
   }
 
+  /// FR6: Submit follow-up answers to refine guidance
+  Future<Map<String, dynamic>> submitFollowUpAnswer(dynamic requestId, dynamic answers) async {
+    if (_token == null) throw ApiException('Not authenticated');
+    return await _api.submitFollowUpAnswer(_token!, requestId, answers);
+  }
+
   /// FR4: Load citizen's submitted requests
   Future<List<Map<String, dynamic>>> fetchMyRequests() async {
     if (_token == null) return [];

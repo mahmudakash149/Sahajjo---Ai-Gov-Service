@@ -108,6 +108,18 @@ class ApiService {
             }),
           ));
 
+  // FR6: Submit Follow-Up Answers to Refine Guidance
+  Future<Map<String, dynamic>> submitFollowUpAnswer(
+    String token,
+    dynamic requestId,
+    dynamic answers,
+  ) =>
+      _send(() => http.post(
+            _u('/requests/$requestId/follow-up'),
+            headers: {..._json, 'Authorization': 'Bearer $token'},
+            body: jsonEncode({'answers': answers}),
+          ));
+
   Future<List<Map<String, dynamic>>> getMyServiceRequests(String token) async {
     final res = await _send(() => http.get(
           _u('/requests/my'),
