@@ -81,6 +81,15 @@ class S {
   String get aiPoweredBadge => _t('সাহায্য জেমিনাই এআই দ্বারা বিশ্লেষিত', 'Analyzed by Sahajjo Gemini AI');
   String get tapToViewGuidance => _t('এআই নির্দেশনা দেখতে ট্যাপ করুন', 'Tap to view AI guidance');
 
+  // FR6 Follow-up Questions & Clarification
+  String get followUpTitle => _t('অধিকতর তথ্যের জন্য প্রশ্ন', 'Clarifying Follow-up Questions');
+  String get followUpSubtitle => _t('নির্দেশনা ও প্রয়োজনীয় কাগজপত্র আরও নিখুঁত করতে নিচের তথ্য দিন:', 'Select an option below to tailor your required documents and steps:');
+  String get refineGuidance => _t('নির্দেশনা নিখুঁত করুন', 'Refine Guidance');
+  String get refining => _t('হালনাগাদ করা হচ্ছে…', 'Refining…');
+  String get guidanceRefinedSuccess => _t('আপনার উত্তরের ভিত্তিতে সেবা নির্দেশিকা নিখুঁত করা হয়েছে!', 'Guidance refined successfully based on your answers!');
+  String get refinedBadge => _t('✓ আপনার পছন্দের ভিত্তিতে সুনির্দিষ্ট', '✓ Tailored to your selection');
+  String get selectAnswerPrompt => _t('অনুগ্রহ করে অন্তত একটি প্রশ্নের উত্তর দিন', 'Please select at least one option to refine');
+
   // Validation
   String get reqName => _t('নাম লিখুন (কমপক্ষে ২ অক্ষর)', 'Enter your name (min 2 characters)');
   String get badPhone => _t('সঠিক মোবাইল নম্বর দিন (01XXXXXXXXX)', 'Enter a valid mobile number (01XXXXXXXXX)');

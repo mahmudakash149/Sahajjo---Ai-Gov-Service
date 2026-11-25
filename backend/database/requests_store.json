@@ -24,5 +24,530 @@
       "aiPowered": true
     },
     "createdAt": "2026-11-11T18:17:07.340Z"
+  },
+  {
+    "id": 4,
+    "userId": "1",
+    "requestText": "ami nid card banabo",
+    "language": "en",
+    "status": "processed",
+    "aiDiagnosis": {
+      "serviceId": 2,
+      "serviceName": "NID Correction",
+      "serviceNameBn": "এনআইডি তথ্য সংশোধন",
+      "confidence": 0.96,
+      "summary": "Your request matches the \"NID Correction\" service.",
+      "requiredDocuments": [
+        "National ID / Birth Certificate",
+        "Passport size photographs",
+        "Payment receipt/challan"
+      ],
+      "steps": [
+        "Fill out the application on the official portal",
+        "Pay the requisite government fees",
+        "Submit documents and receive approval"
+      ],
+      "aiPowered": false
+    },
+    "createdAt": "2026-11-24T17:44:53.422Z"
+  },
+  {
+    "id": 5,
+    "userId": 1,
+    "requestText": "nid card banabo",
+    "language": "en",
+    "status": "refined",
+    "aiDiagnosis": {
+      "serviceId": 2,
+      "serviceName": "NID Card Application / Services",
+      "serviceNameBn": "এনআইডি কার্ড সেবা",
+      "confidence": 0.99,
+      "summary": "Since you are 18 years or above and have an online Birth Registration Certificate, you are fully eligible to apply for a new National Identity (NID) card as a new voter through the Election Commission of Bangladesh online portal.",
+      "requiredDocuments": [
+        "Online Birth Registration Certificate (English version preferred)",
+        "Educational certificates (SSC or equivalent, if applicable/available)",
+        "Utility bill copy (Electricity, Gas, or Water) as proof of address",
+        "Parent's NID card copies",
+        "Passport size photograph"
+      ],
+      "steps": [
+        "Visit the official Election Commission Bangladesh NID portal (services.nidw.gov.bd).",
+        "Click on 'Apply Online' (নতুন ভোটার নিবন্ধন) and create an account using your online Birth Registration details.",
+        "Fill out the online application form with accurate personal, educational, and address information.",
+        "Upload scanned copies of required documents (Birth Certificate, Utility Bill, etc.).",
+        "Submit the application online and print the application copy along with the slip for biometric appointment.",
+        "Visit your local Upazila/Thana Election Office on the scheduled date for biometric data collection (fingerprints, photograph, and iris scan)."
+      ],
+      "followUpQuestions": [],
+      "clarifiedDetails": [
+        {
+          "questionId": "q1",
+          "question": "What is your current age to determine the correct registration process?",
+          "answer": "18 years or above"
+        },
+        {
+          "questionId": "q2",
+          "question": "Do you already have an online Birth Registration Certificate?",
+          "answer": "Yes, I have it"
+        }
+      ],
+      "aiPowered": true,
+      "refined": true
+    },
+    "createdAt": "2026-11-25T19:18:38.000Z",
+    "updatedAt": "2026-11-25T19:18:55.239Z"
+  },
+  {
+    "id": 6,
+    "userId": "1",
+    "requestText": "I want to register a new trade license for my business. What is the procedure?",
+    "language": "en",
+    "status": "processed",
+    "aiDiagnosis": {
+      "serviceId": 5,
+      "serviceName": "Trade License",
+      "serviceNameBn": "ট্রেড লাইসেন্স",
+      "confidence": 0.98,
+      "summary": "As Sahajjo AI, I am here to help you register a new trade license for your business in Bangladesh. A trade license is mandatory for legally operating any business within a city corporation, municipality, or union parishad jurisdiction.",
+      "requiredDocuments": [
+        "National ID (NID) card of the business owner",
+        "Passport-sized photographs of the applicant",
+        "Proof of business address (Rent agreement or property ownership deed)",
+        "Holding tax receipt of the business premises",
+        "TIN certificate (if applicable)"
+      ],
+      "steps": [
+        "Visit the local government authority office (City Corporation/Municipality/Union Parishad) or their online service portal.",
+        "Fill out the Trade License application form (K-Form) and submit it along with all required documents.",
+        "Pay the prescribed license and signboard fees to receive your official Trade License certificate."
+      ],
+      "followUpQuestions": [
+        {
+          "id": "q1",
+          "question": "What is the location type of your business establishment?",
+          "options": [
+            "City Corporation",
+            "Municipality (Paurashava)",
+            "Union Parishad"
+          ]
+        },
+        {
+          "id": "q2",
+          "question": "What is the nature of your business?",
+          "options": [
+            "General Trading/Shop",
+            "Manufacturing/Industry",
+            "Consultancy/Service",
+            "E-commerce/Online based"
+          ]
+        }
+      ],
+      "aiPowered": true
+    },
+    "createdAt": "2026-11-25T19:19:11.838Z"
+  },
+  {
+    "id": 7,
+    "userId": 1,
+    "requestText": "jormo nibondo e babar nam thik korte chai how?",
+    "language": "en",
+    "status": "refined",
+    "aiDiagnosis": {
+      "serviceId": 1,
+      "serviceName": "Birth Registration",
+      "serviceNameBn": "জন্ম নিবন্ধন",
+      "confidence": 0.99,
+      "summary": "Process for correcting father's name on an existing birth registration certificate for an adult (above 5 years).",
+      "requiredDocuments": [
+        "Existing digital birth registration certificate",
+        "Father's correct birth registration certificate or National ID (NID) card",
+        "Educational certificates (SSC certificate, marksheet, etc.) if applicable",
+        "Parental documents showing the correct name (marriage certificate, passport, etc.)",
+        "Application form signed by the applicant"
+      ],
+      "steps": [
+        "Visit the official Birth and Death Registration website (bdris.gov.bd).",
+        "Navigate to the 'Birth Registration Information Correction' section.",
+        "Enter your existing birth registration number and date of birth.",
+        "Select 'Father's Name' as the field to be corrected and provide the correct spelling/details.",
+        "Upload scanned copies of supporting documents verifying the correct name of the father.",
+        "Submit the application online and print the application receipt.",
+        "Submit the printed copy along with original supporting documents to your local Union Parishad, Paurashava, or Ward Councilor office for verification and final approval."
+      ],
+      "followUpQuestions": [],
+      "clarifiedDetails": [
+        {
+          "questionId": "q1",
+          "question": "Is this for a new birth registration or correcting an existing certificate?",
+          "answer": "Information Correction"
+        },
+        {
+          "questionId": "q2",
+          "question": "Who is this registration for?",
+          "answer": "Adult (above 5 years)"
+        }
+      ],
+      "aiPowered": true,
+      "refined": true
+    },
+    "createdAt": "2026-11-25T19:20:27.000Z",
+    "updatedAt": "2026-11-25T19:21:20.572Z"
+  },
+  {
+    "id": 8,
+    "userId": 1,
+    "requestText": "ami nid card banate chai",
+    "language": "en",
+    "status": "refined",
+    "aiDiagnosis": {
+      "serviceId": 2,
+      "serviceName": "NID Correction",
+      "serviceNameBn": "এনআইডি তথ্য সংশোধন",
+      "confidence": 0.98,
+      "summary": "You are an adult citizen (18 years or older) looking to correct information on your existing National Identity (NID) card. This process requires submitting supporting documents verifying the correct information through the Election Commission's online portal.",
+      "requiredDocuments": [
+        "Current NID card copy",
+        "Birth Certificate (online verified)",
+        "Educational certificates (SSC or equivalent for name/age correction)",
+        "Supporting documents for specific corrections (e.g., marriage certificate for name change, utility bill for address)",
+        "Passport size photograph"
+      ],
+      "steps": [
+        "Visit the official Election Commission NID portal (services.nidw.gov.bd).",
+        "Register/Login to your NID account using your NID number and date of birth.",
+        "Select the 'Information Correction' (তথ্য সংশোধন) option.",
+        "Choose the specific fields you want to correct and provide the correct information.",
+        "Upload scanned copies of all required supporting documents.",
+        "Pay the applicable government fees online via mobile banking or debit/credit card.",
+        "Submit the application and download the application copy for future reference."
+      ],
+      "followUpQuestions": [],
+      "clarifiedDetails": [
+        {
+          "questionId": "q1",
+          "question": "Are you applying for a brand new NID card for the first time, or do you already have an NID number and want to correct/replace it?",
+          "answer": "NID Correction"
+        },
+        {
+          "questionId": "q2",
+          "question": "What is your current age group?",
+          "answer": "18 years or older (Eligible voter)"
+        }
+      ],
+      "aiPowered": true,
+      "refined": true
+    },
+    "createdAt": "2026-11-25T19:23:37.000Z",
+    "updatedAt": "2026-11-25T19:26:01.442Z"
+  },
+  {
+    "id": 9,
+    "userId": 1,
+    "requestText": "i want to correct make my nid father name",
+    "language": "en",
+    "status": "refined",
+    "aiDiagnosis": {
+      "serviceId": 2,
+      "serviceName": "NID Correction",
+      "serviceNameBn": "এনআইডি তথ্য সংশোধন",
+      "confidence": 0.99,
+      "summary": "You are applying to correct your father's name on your NID for the first time, backed by your father's NID or Birth Certificate.",
+      "requiredDocuments": [
+        "Father's NID card or online Birth Certificate",
+        "Applicant's current NID card",
+        "Educational certificates (if applicable to show father's correct name)",
+        "Online NID application printout"
+      ],
+      "steps": [
+        "Visit the official Bangladesh Election Commission NID portal (services.nidw.gov.bd).",
+        "Log in or register using your NID number and date of birth.",
+        "Navigate to the 'Information Correction' (তথ্য সংশোধন) section.",
+        "Select father's name for correction and enter the correct spelling as per your supporting documents.",
+        "Upload scanned copies of your father's NID/Birth Certificate and other relevant educational documents.",
+        "Pay the required government application fee through the available digital payment methods.",
+        "Submit the application and download the acknowledgement slip for future reference."
+      ],
+      "followUpQuestions": [],
+      "clarifiedDetails": [
+        {
+          "questionId": "q1",
+          "question": "What supporting document do you currently have to verify your father's correct name?",
+          "answer": "Father's NID / Birth Certificate"
+        },
+        {
+          "questionId": "q2",
+          "question": "Is this your first time applying for this specific NID correction?",
+          "answer": "Yes, first time"
+        }
+      ],
+      "aiPowered": true,
+      "refined": true
+    },
+    "createdAt": "2026-11-25T19:30:09.000Z",
+    "updatedAt": "2026-11-25T19:41:16.899Z"
+  },
+  {
+    "id": 10,
+    "userId": 1,
+    "requestText": "birth certificate",
+    "language": "en",
+    "status": "refined",
+    "aiDiagnosis": {
+      "serviceId": 1,
+      "serviceName": "Birth Registration Information Correction",
+      "serviceNameBn": "জন্ম নিবন্ধন তথ্য সংশোধন",
+      "confidence": 0.99,
+      "summary": "Application for correcting the birth registration information of a child under 5 years old through the Bangladesh Government's BDRIS portal.",
+      "requiredDocuments": [
+        "Existing digital birth registration certificate of the child",
+        "Proof of correct information (e.g., Vaccination card, hospital birth certificate, or parents' National ID cards)",
+        "Online application printout",
+        "Application fee payment receipt"
+      ],
+      "steps": [
+        "Visit the official Bangladesh Government Birth and Death Registration website (bdris.gov.bd).",
+        "Navigate to the 'Birth Registration Correction Application' section.",
+        "Enter the child's 17-digit birth registration number and date of birth.",
+        "Select the specific field(s) that need correction and provide the accurate information.",
+        "Upload the supporting documents verifying the correct information.",
+        "Submit the application online and print the copy.",
+        "Submit the printed application along with necessary documents and applicable fees to your local Union Parishad, Paurashava, or City Corporation office within the stipulated time."
+      ],
+      "followUpQuestions": [],
+      "clarifiedDetails": [
+        {
+          "questionId": "q1",
+          "question": "Is this for a new birth registration or correcting an existing certificate?",
+          "answer": "Information Correction"
+        },
+        {
+          "questionId": "q2",
+          "question": "Who is this registration for?",
+          "answer": "Child (under 5 years)"
+        }
+      ],
+      "aiPowered": true,
+      "refined": true
+    },
+    "createdAt": "2026-11-25T19:49:42.000Z",
+    "updatedAt": "2026-11-25T19:49:56.713Z"
+  },
+  {
+    "id": 11,
+    "userId": 1,
+    "requestText": "birth certificate",
+    "language": "en",
+    "status": "refined",
+    "aiDiagnosis": {
+      "serviceId": 1,
+      "serviceName": "Birth Registration",
+      "serviceNameBn": "জন্ম নিবন্ধন",
+      "confidence": 0.98,
+      "summary": "Refined procedure generated for \"Birth Registration\" based on your specific selections.",
+      "requiredDocuments": [
+        "National ID & digital birth registration copy",
+        "Government payment challan & attested proofs"
+      ],
+      "steps": [
+        "Complete online application as per your selected category",
+        "Pay government fee and retain challan receipt",
+        "Submit hard copy with original proofs to the registrar office"
+      ],
+      "followUpQuestions": [],
+      "clarifiedDetails": [
+        {
+          "questionId": "q1",
+          "question": "What type of birth registration service do you need?",
+          "answer": "New Registration"
+        },
+        {
+          "questionId": "q2",
+          "question": "What is the age of the person requiring the birth registration?",
+          "answer": "Above 18 years (Adult)"
+        }
+      ],
+      "aiPowered": false,
+      "refined": true
+    },
+    "createdAt": "2026-11-25T19:51:58.000Z",
+    "updatedAt": "2026-11-25T19:52:20.498Z"
+  },
+  {
+    "id": 12,
+    "userId": 1,
+    "requestText": "ami nijer jonno birth certificate banabo",
+    "language": "en",
+    "status": "refined",
+    "aiDiagnosis": {
+      "serviceId": 1,
+      "serviceName": "Birth Registration",
+      "serviceNameBn": "জন্ম নিবন্ধন",
+      "confidence": 0.99,
+      "summary": "Application process for adult birth registration (above 18 years) with both parents' digital birth registration certificates available.",
+      "requiredDocuments": [
+        "Online application form printed and signed",
+        "Digital Birth Registration Certificates of both parents",
+        "National ID (NID) card or SSC/Equivalent certificate (as proof of age)",
+        "Proof of address (Utility bill, holding tax receipt, or passport)",
+        "Immunization card or school certificate (if available)"
+      ],
+      "steps": [
+        "Visit the official Bangladesh Birth and Death Registration website (bdris.gov.bd).",
+        "Fill out the online application form for adult birth registration providing accurate personal and parental details.",
+        "Submit the printed application along with copies of parents' digital birth certificates and age-proof documents to the local Union Parishad, Pourashava, or City Corporation office.",
+        "Pay the applicable government fee at the local office and collect the payment receipt.",
+        "Collect the official digital birth registration certificate after verification by the registrar."
+      ],
+      "followUpQuestions": [],
+      "clarifiedDetails": [
+        {
+          "questionId": "q1",
+          "question": "What is your current age category for this birth registration application?",
+          "answer": "Above 18 years (Adult)"
+        },
+        {
+          "questionId": "q2",
+          "question": "Do you already have digital birth registration records for your parents?",
+          "answer": "Yes, both parents have"
+        }
+      ],
+      "aiPowered": true,
+      "refined": true
+    },
+    "createdAt": "2026-11-25T19:52:57.000Z",
+    "updatedAt": "2026-11-25T19:53:20.418Z"
+  },
+  {
+    "id": 13,
+    "userId": "1",
+    "requestText": "ami nid card e mar nam songsodon korbo",
+    "language": "en",
+    "status": "processed",
+    "aiDiagnosis": {
+      "serviceId": 2,
+      "serviceName": "NID Correction",
+      "serviceNameBn": "এনআইডি তথ্য সংশোধন",
+      "confidence": 0.98,
+      "summary": "You want to correct your mother's name on your National Identity (NID) card. This falls under the NID Correction service provided by the Bangladesh Election Commission.",
+      "requiredDocuments": [
+        "Current NID Card photocopy",
+        "Mother's Birth Registration Certificate or NID Card",
+        "SSC or equivalent academic certificate (if applicable)",
+        "Online application copy and receipt of required government fees"
+      ],
+      "steps": [
+        "Visit the official Bangladesh Election Commission NID portal (services.nidw.gov.bd)",
+        "Log in or register with your NID number and date of birth, then select 'Information Correction'",
+        "Submit the required changes for your mother's name, upload supporting documents, and pay the designated fee"
+      ],
+      "followUpQuestions": [
+        {
+          "id": "q1",
+          "question": "What is the current status of your mother's name in your NID card compared to her actual documents?",
+          "options": [
+            "Spelling mistake in English or Bengali",
+            "Completely different name",
+            "Adding deceased status or middle name"
+          ]
+        },
+        {
+          "id": "q2",
+          "question": "Do you have official supporting documents (like your mother's NID or SSC certificate) showing the correct name?",
+          "options": [
+            "Yes, I have mother's NID/Birth Certificate",
+            "Yes, I have academic certificates",
+            "No, I need to make new documents first"
+          ]
+        }
+      ],
+      "aiPowered": true
+    },
+    "createdAt": "2026-11-25T20:05:14.410Z"
+  },
+  {
+    "id": 14,
+    "userId": 1,
+    "requestText": "ami mar mar nam thik korbo nid card e",
+    "language": "bn",
+    "status": "refined",
+    "aiDiagnosis": {
+      "serviceId": 2,
+      "serviceName": "NID Correction",
+      "serviceNameBn": "এনআইডি তথ্য সংশোধন",
+      "confidence": 0.98,
+      "summary": "আপনার জন্ম নিবন্ধন সনদের সাথে মিলিয়ে লেমিনেটেড পেপার এনআইডি কার্ডে মায়ের নাম সংশোধনের জন্য অনলাইন আবেদন এবং প্রয়োজনীয় দলিলপত্র জমা দিতে হবে।",
+      "requiredDocuments": [
+        "সঠিক তথ্য সম্বলিত জন্ম নিবন্ধন সনদ",
+        "লেমিনেটেড পেপার এনআইডি কার্ডের কপি",
+        "পিতা/মাতা/ভাই-বোনের এনআইডি কার্ডের কপি (প্রযোজ্য ক্ষেত্রে)"
+      ],
+      "steps": [
+        "services.nidw.gov.bd ওয়েবসাইটে গিয়ে অ্যাকাউন্ট রেজিস্টার বা লগইন করুন।",
+        "প্রোফাইল মেনু থেকে 'তথ্য সংশোধন' অপশনটি বেছে নিন।",
+        "মায়ের নামের জায়গায় সঠিক তথ্য (জন্ম নিবন্ধন সনদ অনুযায়ী) এন্ট্রি করুন।",
+        "সঠিক তথ্য সম্বলিত জন্ম নিবন্ধন সনদ ও অন্যান্য প্রয়োজনীয় কাগজপত্রের স্ক্যান কপি আপলোড করুন।",
+        "নির্ধারিত ফি অনলাইনে পরিশোধ করুন এবং আবেদনপত্রটি প্রিন্ট করে নিন।"
+      ],
+      "followUpQuestions": [],
+      "clarifiedDetails": [
+        {
+          "questionId": "q1",
+          "question": "আপনার মায়ের নাম সংশোধনের জন্য কোন সরকারি দলিলটিতে মায়ের নামটি সঠিক আছে?",
+          "answer": "জন্ম নিবন্ধন সনদ"
+        },
+        {
+          "questionId": "q2",
+          "question": "আপনার বর্তমান এনআইডি কার্ডটি কি স্মার্ট (Smart NID) কার্ড নাকি লেমিনেটেড পেপার কার্ড?",
+          "answer": "লেমিনেটেড পেপার কার্ড"
+        }
+      ],
+      "aiPowered": true,
+      "refined": true
+    },
+    "createdAt": "2026-11-25T20:05:57.000Z",
+    "updatedAt": "2026-11-25T20:06:42.763Z"
+  },
+  {
+    "id": 15,
+    "userId": 1,
+    "requestText": "ami nam thik korbo nid te",
+    "language": "bn",
+    "status": "refined",
+    "aiDiagnosis": {
+      "serviceId": 2,
+      "serviceName": "NID Correction",
+      "serviceNameBn": "এনআইডি তথ্য সংশোধন",
+      "confidence": 0.98,
+      "summary": "আপনার এনআইডি কার্ডে পিতার নাম সংশোধনের জন্য জন্ম নিবন্ধন সনদকে supporting document হিসেবে ব্যবহার করে আবেদন করার প্রক্রিয়া নিচে দেওয়া হলো।",
+      "requiredDocuments": [
+        "সংশোধিত জন্ম নিবন্ধন সনদ (যেখানে পিতার সঠিক নাম রয়েছে)",
+        "পিতার বর্তমান এনআইডি কার্ড বা মৃত্যু সনদ (প্রযোজ্য ক্ষেত্রে)",
+        "পাসপোর্ট বা অন্য কোনো সরকারি বৈধ নথি (যদি থাকে)"
+      ],
+      "steps": [
+        "services.nidw.gov.bd ওয়েবসাইটে গিয়ে আপনার অ্যাকাউন্ট লগইন করুন বা নতুন নিবন্ধন করুন।",
+        "প্রোফাইল মেনু থেকে 'তথ্য সংশোধন' (Correction) অপشنটি বেছে নিন।",
+        "পিতার নাম ফিলድটি সিলেক্ট করে সঠিক নামটি এন্ট্রি করুন।",
+        "আপনার জন্ম নিবন্ধন সনদটি স্ক্যান করে আপলোড করুন।",
+        "প্রয়োজনীয় ফি অনলাইনে পরিশোধ করে আবেদনটি সাবমিট করুন এবং প্রিন্ট কপি সংরক্ষণ করুন।"
+      ],
+      "followUpQuestions": [],
+      "clarifiedDetails": [
+        {
+          "questionId": "q1",
+          "question": "আপনি এনআইডি কার্ডের কোন ধরণের নাম সংশোধন করতে চান?",
+          "answer": "পিতার নাম"
+        },
+        {
+          "questionId": "q2",
+          "question": "আপনার সংশোধনের পক্ষে সমর্থনে কোন শিক্ষাগত যোগ্যতার সনদ আছে কি?",
+          "answer": "জন্ম নিবন্ধন সনদ"
+        }
+      ],
+      "aiPowered": true,
+      "refined": true
+    },
+    "createdAt": "2026-11-25T20:07:07.000Z",
+    "updatedAt": "2026-11-25T20:07:26.474Z"
   }
 ]

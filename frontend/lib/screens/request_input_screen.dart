@@ -89,19 +89,7 @@ class _RequestInputScreenState extends State<RequestInputScreen> {
   }
 
   void _showGuidanceBottomSheet(String trackingId, Map<String, dynamic>? aiDiagnosis) {
-    final auth = context.read<AuthProvider>();
-    final s = auth.s;
-    final isBn = auth.lang == 'bn';
-
     if (aiDiagnosis == null) return;
-
-    final serviceName = isBn
-        ? (aiDiagnosis['serviceNameBn'] ?? aiDiagnosis['serviceName'] ?? '')
-        : (aiDiagnosis['serviceName'] ?? aiDiagnosis['serviceNameBn'] ?? '');
-    final confidence = ((aiDiagnosis['confidence'] ?? 0.9) * 100).toInt();
-    final summary = aiDiagnosis['summary']?.toString() ?? '';
-    final docs = (aiDiagnosis['requiredDocuments'] as List? ?? []).map((e) => e.toString()).toList();
-    final steps = (aiDiagnosis['steps'] as List? ?? []).map((e) => e.toString()).toList();
 
     showModalBottomSheet(
       context: context,
@@ -110,191 +98,10 @@ class _RequestInputScreenState extends State<RequestInputScreen> {
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
-      builder: (ctx) => DraggableScrollableSheet(
-        initialChildSize: 0.85,
-        maxChildSize: 0.95,
-        minChildSize: 0.5,
-        expand: false,
-        builder: (_, scrollController) => ListView(
-          controller: scrollController,
-          padding: const EdgeInsets.fromLTRB(20, 12, 20, 24),
-          children: [
-            // Drag handle
-            Center(
-              child: Container(
-                width: 40,
-                height: 4,
-                margin: const EdgeInsets.only(bottom: 16),
-                decoration: BoxDecoration(
-                  color: Colors.grey.shade300,
-                  borderRadius: BorderRadius.circular(2),
-                ),
-              ),
-            ),
-
-            // Top Header: AI Badge & Tracking ID
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFF006A4E).withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      const Icon(Icons.auto_awesome, color: Color(0xFF006A4E), size: 16),
-                      const SizedBox(width: 4),
-                      Text(
-                        s.aiPoweredBadge,
-                        style: const TextStyle(
-                          fontSize: 11,
-                          fontWeight: FontWeight.bold,
-                          color: Color(0xFF006A4E),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                Text(
-                  '#REQ-$trackingId',
-                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Colors.grey),
-                ),
-              ],
-            ),
-
-            const SizedBox(height: 16),
-
-            // Identified Service Card
-            Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: const Color(0xFF006A4E).withOpacity(0.06),
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: const Color(0xFF006A4E).withOpacity(0.25)),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    s.identifiedService,
-                    style: TextStyle(fontSize: 12, color: Colors.grey.shade700, fontWeight: FontWeight.w600),
-                  ),
-                  const SizedBox(height: 4),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: Text(
-                          serviceName,
-                          style: const TextStyle(
-                            fontSize: 20,
-                            fontWeight: FontWeight.bold,
-                            color: Color(0xFF006A4E),
-                          ),
-                        ),
-                      ),
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                        decoration: BoxDecoration(
-                          color: Colors.green.shade100,
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: Text(
-                          '$confidence% ${s.matchConfidence}',
-                          style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Colors.green.shade900),
-                        ),
-                      ),
-                    ],
-                  ),
-                  if (summary.isNotEmpty) ...[
-                    const SizedBox(height: 10),
-                    Text(
-                      summary,
-                      style: TextStyle(fontSize: 14, color: Colors.grey.shade800, height: 1.4),
-                    ),
-                  ],
-                ],
-              ),
-            ),
-
-            const SizedBox(height: 20),
-
-            // Required Documents
-            if (docs.isNotEmpty) ...[
-              Text(
-                s.requiredDocs,
-                style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-              ),
-              const SizedBox(height: 8),
-              ...docs.map(
-                (doc) => Padding(
-                  padding: const EdgeInsets.only(bottom: 6),
-                  child: Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Icon(Icons.check_circle_rounded, color: Color(0xFF006A4E), size: 18),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: Text(doc, style: const TextStyle(fontSize: 13.5, height: 1.3)),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-              const SizedBox(height: 16),
-            ],
-
-            // Step-by-Step Procedure
-            if (steps.isNotEmpty) ...[
-              Text(
-                s.stepsTitle,
-                style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-              ),
-              const SizedBox(height: 8),
-              ...steps.asMap().entries.map(
-                (entry) {
-                  final idx = entry.key + 1;
-                  final step = entry.value;
-                  return Padding(
-                    padding: const EdgeInsets.only(bottom: 10),
-                    child: Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        CircleAvatar(
-                          radius: 11,
-                          backgroundColor: const Color(0xFF006A4E),
-                          child: Text(
-                            '$idx',
-                            style: const TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.bold),
-                          ),
-                        ),
-                        const SizedBox(width: 10),
-                        Expanded(
-                          child: Text(step, style: const TextStyle(fontSize: 13.5, height: 1.35)),
-                        ),
-                      ],
-                    ),
-                  );
-                },
-              ),
-            ],
-
-            const SizedBox(height: 20),
-
-            // Close Button
-            FilledButton(
-              style: FilledButton.styleFrom(
-                backgroundColor: const Color(0xFF006A4E),
-                padding: const EdgeInsets.symmetric(vertical: 14),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-              ),
-              onPressed: () => Navigator.pop(ctx),
-              child: Text(s.close),
-            ),
-          ],
-        ),
+      builder: (ctx) => GuidanceBottomSheetWidget(
+        trackingId: trackingId,
+        initialAiDiagnosis: aiDiagnosis,
+        onRefined: _loadHistory,
       ),
     );
   }
@@ -312,6 +119,11 @@ class _RequestInputScreenState extends State<RequestInputScreen> {
     String label;
 
     switch (status.toLowerCase()) {
+      case 'refined':
+        bg = Colors.green.shade100;
+        fg = Colors.green.shade900;
+        label = auth.s.refinedBadge;
+        break;
       case 'under_review':
         bg = Colors.amber.shade100;
         fg = Colors.amber.shade900;
@@ -354,14 +166,14 @@ class _RequestInputScreenState extends State<RequestInputScreen> {
             decoration: BoxDecoration(
               gradient: LinearGradient(
                 colors: [
-                  const Color(0xFF006A4E).withOpacity(0.08),
-                  const Color(0xFF006A4E).withOpacity(0.02),
+                  const Color(0xFF006A4E).withValues(alpha: 0.08),
+                  const Color(0xFF006A4E).withValues(alpha: 0.02),
                 ],
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
               ),
               borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: const Color(0xFF006A4E).withOpacity(0.2)),
+              border: Border.all(color: const Color(0xFF006A4E).withValues(alpha: 0.2)),
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -566,7 +378,7 @@ class _RequestInputScreenState extends State<RequestInputScreen> {
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12),
                   side: BorderSide(
-                    color: ai != null ? const Color(0xFF006A4E).withOpacity(0.3) : Colors.grey.shade200,
+                    color: ai != null ? const Color(0xFF006A4E).withValues(alpha: 0.3) : Colors.grey.shade200,
                   ),
                 ),
                 child: InkWell(
@@ -611,7 +423,7 @@ class _RequestInputScreenState extends State<RequestInputScreen> {
                           Container(
                             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                             decoration: BoxDecoration(
-                              color: const Color(0xFF006A4E).withOpacity(0.06),
+                              color: const Color(0xFF006A4E).withValues(alpha: 0.06),
                               borderRadius: BorderRadius.circular(8),
                             ),
                             child: Row(
@@ -643,6 +455,600 @@ class _RequestInputScreenState extends State<RequestInputScreen> {
                 ),
               );
             }),
+        ],
+      ),
+    );
+  }
+}
+
+/// FR6: Interactive Guidance Bottom Sheet Widget with Follow-Up Questions and Refinement
+class GuidanceBottomSheetWidget extends StatefulWidget {
+  final String trackingId;
+  final Map<String, dynamic> initialAiDiagnosis;
+  final VoidCallback onRefined;
+
+  const GuidanceBottomSheetWidget({
+    super.key,
+    required this.trackingId,
+    required this.initialAiDiagnosis,
+    required this.onRefined,
+  });
+
+  @override
+  State<GuidanceBottomSheetWidget> createState() => _GuidanceBottomSheetWidgetState();
+}
+
+class _GuidanceBottomSheetWidgetState extends State<GuidanceBottomSheetWidget> {
+  late Map<String, dynamic> _ai = Map<String, dynamic>.from(widget.initialAiDiagnosis);
+  final Map<String, String> _selectedAnswers = {};
+  bool _refining = false;
+  String? _refineError;
+
+  Future<void> _submitRefinement(AuthProvider auth) async {
+    if (_selectedAnswers.isEmpty) {
+      setState(() => _refineError = auth.s.selectAnswerPrompt);
+      return;
+    }
+
+    setState(() {
+      _refining = true;
+      _refineError = null;
+    });
+
+    final rawQuestions = _ai['followUpQuestions'] as List? ?? [];
+    final followUpQuestions = rawQuestions.whereType<Map>().toList();
+
+    // Collect all question texts (including sub-questions) for accurate refinement payloads
+    final questionTextMap = <String, String>{};
+    for (final q in followUpQuestions) {
+      final id = q['id']?.toString() ?? '';
+      final text = q['question']?.toString() ?? '';
+      if (id.isNotEmpty) questionTextMap[id] = text;
+      final subMap = q['subQuestionsByOption'] as Map?;
+      if (subMap != null) {
+        subMap.forEach((_, subList) {
+          if (subList is List) {
+            for (final sq in subList) {
+              if (sq is Map) {
+                final sqId = sq['id']?.toString() ?? '';
+                final sqText = sq['question']?.toString() ?? '';
+                if (sqId.isNotEmpty) questionTextMap[sqId] = sqText;
+              }
+            }
+          }
+        });
+      }
+    }
+
+    final answersList = _selectedAnswers.entries.map((entry) {
+      final qId = entry.key;
+      final answer = entry.value;
+      final questionText = questionTextMap[qId] ?? qId;
+      return {
+        'questionId': qId,
+        'question': questionText,
+        'answer': answer,
+      };
+    }).toList();
+
+    try {
+      final res = await auth.submitFollowUpAnswer(widget.trackingId, answersList);
+      if (!mounted) return;
+
+      final updatedReq = res['request'] as Map<String, dynamic>?;
+      final newAi = updatedReq?['aiDiagnosis'] as Map<String, dynamic>?;
+
+      if (newAi != null) {
+        setState(() {
+          _ai = Map<String, dynamic>.from(newAi);
+          _selectedAnswers.clear();
+        });
+      }
+
+      widget.onRefined();
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(auth.s.guidanceRefinedSuccess),
+          backgroundColor: const Color(0xFF006A4E),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _refineError = e.toString());
+    } finally {
+      if (mounted) setState(() => _refining = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final auth = context.watch<AuthProvider>();
+    final s = auth.s;
+    final isBn = auth.lang == 'bn';
+
+    final serviceName = isBn
+        ? (_ai['serviceNameBn'] ?? _ai['serviceName'] ?? '')
+        : (_ai['serviceName'] ?? _ai['serviceNameBn'] ?? '');
+    final confidence = ((_ai['confidence'] ?? 0.9) * 100).toInt();
+    final summary = _ai['summary']?.toString() ?? '';
+    final docs = (_ai['requiredDocuments'] as List? ?? []).map((e) => e.toString()).toList();
+    final steps = (_ai['steps'] as List? ?? []).map((e) => e.toString()).toList();
+
+    final rawQuestions = _ai['followUpQuestions'] as List? ?? [];
+    final followUpQuestions = rawQuestions.whereType<Map>().toList();
+
+    final isRefined = _ai['refined'] == true || _ai['clarifiedDetails'] != null;
+    final clarifiedDetails = _ai['clarifiedDetails'] as List? ?? [];
+
+    return DraggableScrollableSheet(
+      initialChildSize: 0.88,
+      maxChildSize: 0.95,
+      minChildSize: 0.5,
+      expand: false,
+      builder: (_, scrollController) => ListView(
+        controller: scrollController,
+        padding: const EdgeInsets.fromLTRB(20, 12, 20, 30),
+        children: [
+          // Drag handle
+          Center(
+            child: Container(
+              width: 40,
+              height: 4,
+              margin: const EdgeInsets.only(bottom: 16),
+              decoration: BoxDecoration(
+                color: Colors.grey.shade300,
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+          ),
+
+          // Top Header: AI Badge / Refined Badge & Tracking ID
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                decoration: BoxDecoration(
+                  color: (isRefined ? Colors.green : const Color(0xFF006A4E)).withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      isRefined ? Icons.verified : Icons.auto_awesome,
+                      color: isRefined ? Colors.green.shade800 : const Color(0xFF006A4E),
+                      size: 16,
+                    ),
+                    const SizedBox(width: 4),
+                    Text(
+                      isRefined ? s.refinedBadge : s.aiPoweredBadge,
+                      style: TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.bold,
+                        color: isRefined ? Colors.green.shade800 : const Color(0xFF006A4E),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Text(
+                '#REQ-${widget.trackingId}',
+                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Colors.grey),
+              ),
+            ],
+          ),
+
+          const SizedBox(height: 16),
+
+          // Identified Service Card
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: const Color(0xFF006A4E).withValues(alpha: 0.06),
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: const Color(0xFF006A4E).withValues(alpha: 0.25)),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  s.identifiedService,
+                  style: TextStyle(fontSize: 12, color: Colors.grey.shade700, fontWeight: FontWeight.w600),
+                ),
+                const SizedBox(height: 4),
+                Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        serviceName,
+                        style: const TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
+                          color: Color(0xFF006A4E),
+                        ),
+                      ),
+                    ),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                      decoration: BoxDecoration(
+                        color: Colors.green.shade100,
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Text(
+                        '$confidence% ${s.matchConfidence}',
+                        style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Colors.green.shade900),
+                      ),
+                    ),
+                  ],
+                ),
+                if (summary.isNotEmpty) ...[
+                  const SizedBox(height: 10),
+                  Text(
+                    summary,
+                    style: TextStyle(fontSize: 14, color: Colors.grey.shade800, height: 1.4),
+                  ),
+                ],
+              ],
+            ),
+          ),
+
+          // Refined summary banner if already answered
+          if (isRefined && clarifiedDetails.isNotEmpty) ...[
+            const SizedBox(height: 12),
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Colors.green.shade50,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: Colors.green.shade300),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      const Icon(Icons.check_circle, color: Color(0xFF006A4E), size: 16),
+                      const SizedBox(width: 6),
+                      Text(
+                        s.guidanceRefinedSuccess,
+                        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12.5, color: Color(0xFF006A4E)),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 6),
+                  ...clarifiedDetails.map((detail) {
+                    final q = (detail is Map ? (detail['question'] ?? '') : '').toString();
+                    final a = (detail is Map ? (detail['answer'] ?? '') : '').toString();
+                    return Padding(
+                      padding: const EdgeInsets.only(top: 2),
+                      child: Text(
+                        '• ${q.isNotEmpty ? '$q: ' : ''}$a',
+                        style: TextStyle(fontSize: 12, color: Colors.grey.shade800),
+                      ),
+                    );
+                  }),
+                ],
+              ),
+            ),
+          ],
+
+          // FR6: Interactive Follow-up Questions Card
+          if (followUpQuestions.isNotEmpty) ...[
+            const SizedBox(height: 16),
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: const Color(0xFFF0FDF4), // light emerald
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: const Color(0xFF006A4E).withValues(alpha: 0.35), width: 1.5),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(6),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF006A4E).withValues(alpha: 0.12),
+                          shape: BoxShape.circle,
+                        ),
+                        child: const Icon(Icons.help_outline_rounded, color: Color(0xFF006A4E), size: 18),
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              s.followUpTitle,
+                              style: const TextStyle(
+                                fontWeight: FontWeight.bold,
+                                fontSize: 14.5,
+                                color: Color(0xFF006A4E),
+                              ),
+                            ),
+                            Text(
+                              s.followUpSubtitle,
+                              style: TextStyle(fontSize: 11.5, color: Colors.grey.shade700),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  const Divider(height: 1, thickness: 0.8),
+                  const SizedBox(height: 10),
+
+                  // Questions & Choice Chips
+                  ...followUpQuestions.map((q) {
+                    final qId = q['id']?.toString() ?? 'q1';
+                    final qText = q['question']?.toString() ?? '';
+                    final options = (q['options'] as List? ?? []).map((e) => e.toString()).toList();
+                    final selectedVal = _selectedAnswers[qId];
+
+                    // Check for dynamic sub-questions based on selected option (e.g. Final NID Question Bank)
+                    final subQuestionsMap = q['subQuestionsByOption'] as Map?;
+                    List<dynamic>? activeSubQuestions;
+                    if (subQuestionsMap != null && selectedVal != null) {
+                      activeSubQuestions = subQuestionsMap[selectedVal] as List?;
+                    }
+
+                    return Padding(
+                      padding: const EdgeInsets.only(bottom: 12),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            qText,
+                            style: const TextStyle(
+                              fontWeight: FontWeight.w600,
+                              fontSize: 13,
+                              color: Colors.black87,
+                            ),
+                          ),
+                          const SizedBox(height: 6),
+                          Wrap(
+                            spacing: 8,
+                            runSpacing: 4,
+                            children: options.map((opt) {
+                              final isSelected = selectedVal == opt;
+                              return ChoiceChip(
+                                label: Text(
+                                  opt,
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                                    color: isSelected ? Colors.white : Colors.black87,
+                                  ),
+                                ),
+                                selected: isSelected,
+                                selectedColor: const Color(0xFF006A4E),
+                                backgroundColor: Colors.white,
+                                side: BorderSide(
+                                  color: isSelected ? const Color(0xFF006A4E) : Colors.grey.shade300,
+                                ),
+                                onSelected: (bool selected) {
+                                  setState(() {
+                                    if (selected) {
+                                      _selectedAnswers[qId] = opt;
+                                    } else {
+                                      _selectedAnswers.remove(qId);
+                                      // Clean any previous sub-answers if parent question changed
+                                      if (subQuestionsMap != null) {
+                                        subQuestionsMap.forEach((_, subs) {
+                                          if (subs is List) {
+                                            for (final sq in subs) {
+                                              if (sq is Map && sq['id'] != null) {
+                                                _selectedAnswers.remove(sq['id'].toString());
+                                              }
+                                            }
+                                          }
+                                        });
+                                      }
+                                    }
+                                  });
+                                },
+                              );
+                            }).toList(),
+                          ),
+                          if (activeSubQuestions != null && activeSubQuestions.isNotEmpty) ...[
+                            const SizedBox(height: 10),
+                            Container(
+                              margin: const EdgeInsets.only(top: 4, left: 4),
+                              padding: const EdgeInsets.fromLTRB(12, 10, 10, 10),
+                              decoration: BoxDecoration(
+                                color: Colors.white,
+                                borderRadius: BorderRadius.circular(10),
+                                border: Border(
+                                  left: const BorderSide(color: Color(0xFF006A4E), width: 3.5),
+                                  top: BorderSide(color: Colors.grey.shade200),
+                                  right: BorderSide(color: Colors.grey.shade200),
+                                  bottom: BorderSide(color: Colors.grey.shade200),
+                                ),
+                              ),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: activeSubQuestions.whereType<Map>().map((sq) {
+                                  final sqId = sq['id']?.toString() ?? 'sq1';
+                                  final sqText = sq['question']?.toString() ?? '';
+                                  final sqOptions = (sq['options'] as List? ?? []).map((e) => e.toString()).toList();
+                                  final sqSelected = _selectedAnswers[sqId];
+
+                                  return Padding(
+                                    padding: const EdgeInsets.only(bottom: 10),
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          sqText,
+                                          style: const TextStyle(
+                                            fontWeight: FontWeight.w600,
+                                            fontSize: 12.5,
+                                            color: Colors.black87,
+                                          ),
+                                        ),
+                                        const SizedBox(height: 5),
+                                        Wrap(
+                                          spacing: 6,
+                                          runSpacing: 4,
+                                          children: sqOptions.map((sopt) {
+                                            final isSqSelected = sqSelected == sopt;
+                                            return ChoiceChip(
+                                              label: Text(
+                                                sopt,
+                                                style: TextStyle(
+                                                  fontSize: 11.5,
+                                                  fontWeight: isSqSelected ? FontWeight.bold : FontWeight.normal,
+                                                  color: isSqSelected ? Colors.white : Colors.black87,
+                                                ),
+                                              ),
+                                              selected: isSqSelected,
+                                              selectedColor: const Color(0xFF006A4E),
+                                              backgroundColor: Colors.grey.shade50,
+                                              side: BorderSide(
+                                                color: isSqSelected ? const Color(0xFF006A4E) : Colors.grey.shade300,
+                                              ),
+                                              onSelected: (bool selected) {
+                                                setState(() {
+                                                  if (selected) {
+                                                    _selectedAnswers[sqId] = sopt;
+                                                  } else {
+                                                    _selectedAnswers.remove(sqId);
+                                                  }
+                                                });
+                                              },
+                                            );
+                                          }).toList(),
+                                        ),
+                                      ],
+                                    ),
+                                  );
+                                }).toList(),
+                              ),
+                            ),
+                          ],
+                        ],
+                      ),
+                    );
+                  }),
+
+                  if (_refineError != null) ...[
+                    Padding(
+                      padding: const EdgeInsets.only(bottom: 8),
+                      child: Text(
+                        _refineError!,
+                        style: const TextStyle(color: Colors.red, fontSize: 12, fontWeight: FontWeight.w500),
+                      ),
+                    ),
+                  ],
+
+                  // Refine action button
+                  SizedBox(
+                    width: double.infinity,
+                    child: FilledButton.icon(
+                      style: FilledButton.styleFrom(
+                        backgroundColor: const Color(0xFF006A4E),
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                      ),
+                      onPressed: _refining ? null : () => _submitRefinement(auth),
+                      icon: _refining
+                          ? const SizedBox(
+                              width: 16,
+                              height: 16,
+                              child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                            )
+                          : const Icon(Icons.tune_rounded, size: 18),
+                      label: Text(
+                        _refining ? s.refining : s.refineGuidance,
+                        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+
+          const SizedBox(height: 20),
+
+          // Required Documents
+          if (docs.isNotEmpty) ...[
+            Text(
+              s.requiredDocs,
+              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 8),
+            ...docs.map(
+              (doc) => Padding(
+                padding: const EdgeInsets.only(bottom: 6),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Icon(Icons.check_circle_rounded, color: Color(0xFF006A4E), size: 18),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(doc, style: const TextStyle(fontSize: 13.5, height: 1.3)),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
+          ],
+
+          // Step-by-Step Procedure
+          if (steps.isNotEmpty) ...[
+            Text(
+              s.stepsTitle,
+              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 8),
+            ...steps.asMap().entries.map(
+              (entry) {
+                final idx = entry.key + 1;
+                final step = entry.value;
+                return Padding(
+                  padding: const EdgeInsets.only(bottom: 10),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      CircleAvatar(
+                        radius: 11,
+                        backgroundColor: const Color(0xFF006A4E),
+                        child: Text(
+                          '$idx',
+                          style: const TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.bold),
+                        ),
+                      ),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: Text(step, style: const TextStyle(fontSize: 13.5, height: 1.35)),
+                      ),
+                    ],
+                  ),
+                );
+              },
+            ),
+          ],
+
+          const SizedBox(height: 20),
+
+          // Close Button
+          FilledButton(
+            style: FilledButton.styleFrom(
+              backgroundColor: const Color(0xFF006A4E),
+              padding: const EdgeInsets.symmetric(vertical: 14),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            ),
+            onPressed: () => Navigator.pop(context),
+            child: Text(s.close),
+          ),
         ],
       ),
     );

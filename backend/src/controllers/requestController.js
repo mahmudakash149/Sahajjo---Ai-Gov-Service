@@ -1,7 +1,7 @@
 const fs = require('fs');
 const path = require('path');
 const pool = require('../db');
-const { identifyServiceWithGemini } = require('../services/geminiService');
+const { identifyServiceWithGemini, refineServiceWithGemini } = require('../services/geminiService');
 const { ensureRequestsTable } = require('../initDb');
 
 // Persistent store fallback file path
@@ -44,7 +44,7 @@ async function createRequest(req, res, next) {
     const requestText = req.body.requestText.trim();
     const language = req.body.language || 'bn';
 
-    // 1. Identify service and generate guidelines with Gemini AI
+    // 1. Identify service and generate guidelines + follow-up questions with Gemini AI
     const aiDiagnosis = await identifyServiceWithGemini(requestText, language);
     const diagnosisJson = JSON.stringify(aiDiagnosis);
 
@@ -116,6 +116,111 @@ async function createRequest(req, res, next) {
   }
 }
 
+// FR6: Submit Follow-Up Answers to Refine Guidance
+// POST /api/requests/:id/follow-up
+async function submitFollowUp(req, res, next) {
+  try {
+    const userId = req.user.id;
+    const requestId = req.params.id;
+    let answers = req.body.answers;
+
+    // Normalize answers to an array of objects
+    if (!Array.isArray(answers) && typeof answers === 'object') {
+      answers = Object.entries(answers).map(([key, val]) => ({
+        questionId: key,
+        answer: String(val),
+      }));
+    }
+
+    let foundRequest = null;
+    let fromDb = false;
+
+    // 1. Try to find request in MySQL
+    try {
+      const [rows] = await pool.execute(
+        `SELECT id, user_id AS userId, request_text AS requestText, language, status, ai_diagnosis AS aiDiagnosis, created_at AS createdAt
+         FROM service_requests
+         WHERE id = ? AND user_id = ?`,
+        [requestId, userId]
+      );
+      if (rows && rows.length > 0) {
+        foundRequest = rows[0];
+        fromDb = true;
+      }
+    } catch (err) {
+      console.warn('[Request Controller] DB query failed, searching fallback store:', err.message);
+    }
+
+    // 2. If not found in DB or DB offline, search fallback store
+    if (!foundRequest) {
+      foundRequest = inMemoryRequests.find(
+        (r) => String(r.id) === String(requestId) && String(r.userId) === String(userId)
+      );
+    }
+
+    if (!foundRequest) {
+      return res.status(404).json({ message: 'Service request not found or access denied' });
+    }
+
+    // Parse previous diagnosis
+    let prevDiagnosis = foundRequest.aiDiagnosis;
+    if (typeof prevDiagnosis === 'string') {
+      try {
+        prevDiagnosis = JSON.parse(prevDiagnosis);
+      } catch (_) {
+        prevDiagnosis = null;
+      }
+    }
+
+    // 3. Call AI refinement with citizen's answers
+    const refinedDiagnosis = await refineServiceWithGemini(
+      foundRequest.requestText,
+      prevDiagnosis,
+      answers,
+      foundRequest.language || 'bn'
+    );
+
+    const diagnosisJson = JSON.stringify(refinedDiagnosis);
+
+    // 4. Update in DB if available
+    if (fromDb) {
+      try {
+        await pool.execute(
+          `UPDATE service_requests
+           SET ai_diagnosis = ?, status = 'refined'
+           WHERE id = ?`,
+          [diagnosisJson, requestId]
+        );
+      } catch (dbErr) {
+        console.warn('[Request Controller] DB update failed:', dbErr.message);
+      }
+    }
+
+    // 5. Update in memory and persistent fallback file
+    const idx = inMemoryRequests.findIndex((r) => String(r.id) === String(requestId));
+    const updatedRequest = {
+      ...foundRequest,
+      status: 'refined',
+      aiDiagnosis: refinedDiagnosis,
+      updatedAt: new Date().toISOString(),
+    };
+
+    if (idx !== -1) {
+      inMemoryRequests[idx] = updatedRequest;
+    } else {
+      inMemoryRequests.push(updatedRequest);
+    }
+    saveFallbackStore(inMemoryRequests);
+
+    return res.json({
+      message: 'Guidance refined successfully based on your answers',
+      request: updatedRequest,
+    });
+  } catch (err) {
+    return next(err);
+  }
+}
+
 // GET /api/requests/my - Get citizen's recent submitted service requests
 async function listMyRequests(req, res, next) {
   try {
@@ -175,7 +280,7 @@ async function listMyRequests(req, res, next) {
 
       // If DB had 0 rows for this user, check if we have persistent fallback items
       const userItems = inMemoryRequests
-        .filter((r) => r.userId === userId)
+        .filter((r) => String(r.userId) === String(userId))
         .slice(-50)
         .reverse();
 
@@ -183,7 +288,7 @@ async function listMyRequests(req, res, next) {
     } catch (dbErr) {
       console.warn('[Request Controller] DB unavailable (' + dbErr.message + '). Returning from persistent file store.');
       const userItems = inMemoryRequests
-        .filter((r) => r.userId === userId)
+        .filter((r) => String(r.userId) === String(userId))
         .slice(-50)
         .reverse();
 
@@ -196,5 +301,6 @@ async function listMyRequests(req, res, next) {
 
 module.exports = {
   createRequest,
+  submitFollowUp,
   listMyRequests,
 };

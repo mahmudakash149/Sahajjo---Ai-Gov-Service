@@ -744,7 +744,7 @@ class _ServiceDetailsSheetState extends State<ServiceDetailsSheet> {
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                 decoration: BoxDecoration(
-                  color: const Color(0xFF006A4E).withOpacity(0.1),
+                  color: const Color(0xFF006A4E).withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(20),
                 ),
                 child: Row(
@@ -788,9 +788,9 @@ class _ServiceDetailsSheetState extends State<ServiceDetailsSheet> {
           Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: const Color(0xFF006A4E).withOpacity(0.06),
+              color: const Color(0xFF006A4E).withValues(alpha: 0.06),
               borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: const Color(0xFF006A4E).withOpacity(0.25)),
+              border: Border.all(color: const Color(0xFF006A4E).withValues(alpha: 0.25)),
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -844,7 +844,7 @@ class _ServiceDetailsSheetState extends State<ServiceDetailsSheet> {
                         boxShadow: _selectedTab == 0
                             ? [
                                 BoxShadow(
-                                  color: const Color(0xFF006A4E).withOpacity(0.25),
+                                  color: const Color(0xFF006A4E).withValues(alpha: 0.25),
                                   blurRadius: 4,
                                   offset: const Offset(0, 2),
                                 ),
@@ -887,7 +887,7 @@ class _ServiceDetailsSheetState extends State<ServiceDetailsSheet> {
                         boxShadow: _selectedTab == 1
                             ? [
                                 BoxShadow(
-                                  color: const Color(0xFF006A4E).withOpacity(0.25),
+                                  color: const Color(0xFF006A4E).withValues(alpha: 0.25),
                                   blurRadius: 4,
                                   offset: const Offset(0, 2),
                                 ),
@@ -1024,7 +1024,7 @@ class _ServiceDetailsSheetState extends State<ServiceDetailsSheet> {
                       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
                       decoration: BoxDecoration(
                         borderRadius: BorderRadius.circular(10),
-                        border: Border.all(color: const Color(0xFF006A4E).withOpacity(0.35)),
+                        border: Border.all(color: const Color(0xFF006A4E).withValues(alpha: 0.35)),
                       ),
                       child: Row(
                         children: [
