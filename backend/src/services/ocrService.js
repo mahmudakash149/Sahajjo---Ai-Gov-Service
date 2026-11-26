@@ -5,6 +5,19 @@ dotenv.config({ path: path.resolve(__dirname, '../../.env') });
 const API_KEY = (process.env.GEMINI_API_KEY || '').trim();
 const MODEL_NAME = 'gemini-3.5-flash-lite';
 
+function computeReadability(result, docType) {
+  if (docType === 'PHOTO') return true;
+  if (!result || result.ocrEngine === 'unavailable') return false;
+  const hasKeyField = Boolean(result.fullName || result.dateOfBirth || result.documentNumber);
+  if (typeof result.confidence === 'number' && result.confidence < 0.45 && !hasKeyField) {
+    return false;
+  }
+  if (!hasKeyField && String(result.rawText || '').trim().length < 15) {
+    return false;
+  }
+  return true;
+}
+
 /**
  * Extract structured identity fields from an uploaded document buffer.
  * Uses Gemini Vision as primary OCR engine, with Tesseract.js as local fallback.
@@ -17,7 +30,7 @@ async function extractDocumentFields(buffer, mimeType, docType = 'OTHER', langua
       geminiResult = await extractWithGeminiVision(buffer, mimeType, docType, language);
     }
     if (geminiResult) {
-      return geminiResult;
+      return { ...geminiResult, isReadable: computeReadability(geminiResult, docType) };
     }
   }
 
@@ -25,11 +38,11 @@ async function extractDocumentFields(buffer, mimeType, docType = 'OTHER', langua
   if (mimeType && mimeType.startsWith('image/') && buffer && buffer.length > 0) {
     const tesseractResult = await extractWithTesseract(buffer);
     if (tesseractResult) {
-      return tesseractResult;
+      return { ...tesseractResult, isReadable: computeReadability(tesseractResult, docType) };
     }
   }
 
-  return {
+  const unavailable = {
     fullName: null,
     fullNameEn: null,
     fullNameBn: null,
@@ -42,6 +55,7 @@ async function extractDocumentFields(buffer, mimeType, docType = 'OTHER', langua
     confidence: 0,
     ocrEngine: 'unavailable',
   };
+  return { ...unavailable, isReadable: computeReadability(unavailable, docType) };
 }
 
 async function extractWithGeminiVision(buffer, mimeType, docType, language) {
@@ -222,4 +236,5 @@ function parseBasicFieldsFromText(text) {
 module.exports = {
   extractDocumentFields,
   parseBasicFieldsFromText,
+  computeReadability,
 };

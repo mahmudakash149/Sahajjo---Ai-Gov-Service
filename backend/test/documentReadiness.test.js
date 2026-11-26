@@ -1,7 +1,7 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
 const { evaluateReadiness } = require('../src/services/readinessService');
-const { parseBasicFieldsFromText } = require('../src/services/ocrService');
+const { parseBasicFieldsFromText, computeReadability } = require('../src/services/ocrService');
 
 test('evaluateReadiness detects missing documents and name mismatches (FR13-FR15)', () => {
   const report = evaluateReadiness({
@@ -67,6 +67,13 @@ test('evaluateReadiness matches PHOTO and CHALLAN against passport-size photo an
   assert.equal(report.isReady, true);
   assert.equal(report.missingDocuments.length, 0);
   assert.equal(report.mismatches.length, 0);
+});
+
+test('computeReadiness flags unreadable text-bearing docs but allows PHOTO', () => {
+  assert.equal(computeReadability({ ocrEngine: 'unavailable', rawText: '' }, 'NID'), false);
+  assert.equal(computeReadability({ ocrEngine: 'tesseract', confidence: 0.25, rawText: 'blur' }, 'NID'), false);
+  assert.equal(computeReadability({ ocrEngine: 'gemini-vision', fullName: 'Mahmud Akash' }, 'NID'), true);
+  assert.equal(computeReadability({ ocrEngine: 'unavailable', rawText: '' }, 'PHOTO'), true);
 });
 
 test('parseBasicFieldsFromText extracts name, DOB (ignoring Issue Date), and 10/17-digit ID', () => {
