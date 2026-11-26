@@ -26,33 +26,83 @@ class DocumentUploadScreen extends StatefulWidget {
 }
 
 class _DocumentUploadScreenState extends State<DocumentUploadScreen> {
-  String _selectedDocType = 'NID';
+  late String _selectedDocType;
+  late List<Map<String, String>> _docTypes;
   final List<Map<String, dynamic>> _uploadedFiles = [];
   Map<String, dynamic>? _readinessReport;
   bool _loadingDocs = true;
   bool _uploading = false;
+  String? _uploadingFileName;
   bool _checkingReadiness = false;
+  bool _consentGiven = false;
 
-  final List<Map<String, String>> _docTypes = [
-    {'key': 'NID', 'bn': 'জাতীয় পরিচয়পত্র (NID)', 'en': 'National ID (NID)'},
-    {'key': 'BIRTH_CERT', 'bn': 'অনলাইন জন্ম নিবন্ধন সনদ', 'en': 'Online Birth Certificate'},
-    {'key': 'EDUCATIONAL', 'bn': 'শিক্ষাগত সনদ (SSC/HSC)', 'en': 'Educational Certificate (SSC/HSC)'},
-    {'key': 'CITIZENSHIP', 'bn': 'নাগরিকত্ব প্রত্যয়নপত্র', 'en': 'Citizenship Certificate'},
-    {'key': 'UTILITY_BILL', 'bn': 'বিদ্যুৎ/পানি বিল (ঠিকানা প্রমাণ)', 'en': 'Utility Bill (Address Proof)'},
-    {'key': 'OTHER', 'bn': 'অন্যান্য নথি', 'en': 'Other Document'},
-  ];
+  static const Map<String, Map<String, String>> _allDocTypeCatalog = {
+    'NID': {'key': 'NID', 'bn': 'জাতীয় পরিচয়পত্র (NID)', 'en': 'National ID (NID)'},
+    'BIRTH_CERT': {'key': 'BIRTH_CERT', 'bn': 'অনলাইন জন্ম নিবন্ধন সনদ', 'en': 'Online Birth Certificate'},
+    'PHOTO': {'key': 'PHOTO', 'bn': 'পাসপোর্ট সাইজ ছবি', 'en': 'Passport Size Photograph'},
+    'CHALLAN': {'key': 'CHALLAN', 'bn': 'পেমেন্ট রশিদ / চালান কপি', 'en': 'Payment Receipt / Challan'},
+    'EDUCATIONAL': {'key': 'EDUCATIONAL', 'bn': 'শিক্ষাগত সনদ (SSC/HSC)', 'en': 'Educational Certificate (SSC/HSC)'},
+    'CITIZENSHIP': {'key': 'CITIZENSHIP', 'bn': 'নাগরিকত্ব প্রত্যয়নপত্র', 'en': 'Citizenship Certificate'},
+    'UTILITY_BILL': {'key': 'UTILITY_BILL', 'bn': 'বিদ্যুৎ/পানি বিল বা ঠিকানা প্রমাণ', 'en': 'Utility Bill / Address Proof'},
+    'PASSPORT': {'key': 'PASSPORT', 'bn': 'পাসপোর্ট কপি', 'en': 'Passport Copy'},
+    'LAND_DEED': {'key': 'LAND_DEED', 'bn': 'জমির দলিল / খতিয়ান / নামজারি', 'en': 'Land Deed / Khatian / Mutation'},
+    'TRADE_LICENSE': {'key': 'TRADE_LICENSE', 'bn': 'ট্রেড লাইসেন্স / ব্যবসার নথি', 'en': 'Trade License / Business Doc'},
+    'MEDICAL_CERT': {'key': 'MEDICAL_CERT', 'bn': 'টিকা কার্ড / মেডিকেল সনদ', 'en': 'EPI Card / Medical Certificate'},
+    'DRIVING_LICENSE': {'key': 'DRIVING_LICENSE', 'bn': 'ড্রাইভিং / লার্নার লাইসেন্স', 'en': 'Driving / Learner License'},
+    'TIN_CERT': {'key': 'TIN_CERT', 'bn': 'টিআইএন (TIN) সনদ', 'en': 'TIN Certificate'},
+    'OTHER': {'key': 'OTHER', 'bn': 'অন্যান্য নথি', 'en': 'Other Document'},
+  };
+
+  static const Map<int, List<String>> _serviceDocTypeKeys = {
+    1: ['BIRTH_CERT', 'NID', 'MEDICAL_CERT', 'UTILITY_BILL', 'PHOTO', 'CHALLAN'],
+    2: ['NID', 'BIRTH_CERT', 'EDUCATIONAL', 'CITIZENSHIP', 'UTILITY_BILL', 'PHOTO', 'CHALLAN'],
+    3: ['NID', 'BIRTH_CERT', 'PASSPORT', 'CITIZENSHIP', 'UTILITY_BILL', 'PHOTO', 'CHALLAN'],
+    4: ['NID', 'LAND_DEED', 'UTILITY_BILL', 'PHOTO', 'CHALLAN'],
+    5: ['NID', 'TRADE_LICENSE', 'UTILITY_BILL', 'PHOTO', 'CHALLAN'],
+    6: ['NID', 'BIRTH_CERT', 'MEDICAL_CERT', 'CITIZENSHIP', 'CHALLAN'],
+    7: ['NID', 'DRIVING_LICENSE', 'MEDICAL_CERT', 'EDUCATIONAL', 'PHOTO', 'CHALLAN'],
+    8: ['NID', 'TIN_CERT', 'TRADE_LICENSE', 'UTILITY_BILL', 'PHOTO'],
+  };
+
+  List<Map<String, String>> _buildServiceDocTypes() {
+    final keys = List<String>.from(
+      _serviceDocTypeKeys[widget.serviceId] ??
+          ['NID', 'BIRTH_CERT', 'PHOTO', 'CHALLAN', 'EDUCATIONAL', 'CITIZENSHIP', 'UTILITY_BILL'],
+    );
+
+    // Ensure any requiredDocuments keywords are also represented in the dropdown
+    final reqJoined = widget.requiredDocuments.join(' ').toLowerCase();
+    void ensureKey(String key, List<String> triggers) {
+      if (!keys.contains(key) && triggers.any((t) => reqJoined.contains(t))) {
+        keys.add(key);
+      }
+    }
+
+    ensureKey('NID', ['nid', 'national id', 'জাতীয় পরিচয়পত্র', 'এনআইডি']);
+    ensureKey('BIRTH_CERT', ['birth', 'জন্ম']);
+    ensureKey('PHOTO', ['photo', 'ছবি']);
+    ensureKey('CHALLAN', ['challan', 'receipt', 'payment', 'চালান', 'রশিদ']);
+    ensureKey('EDUCATIONAL', ['ssc', 'hsc', 'educational', 'শিক্ষাগত']);
+    ensureKey('CITIZENSHIP', ['citizenship', 'নাগরিকত্ব']);
+    ensureKey('UTILITY_BILL', ['utility', 'holding', 'rental', 'বিল', 'হোল্ডিং']);
+
+    if (!keys.contains('OTHER')) keys.add('OTHER');
+    return keys
+        .where((k) => _allDocTypeCatalog.containsKey(k))
+        .map((k) => _allDocTypeCatalog[k]!)
+        .toList();
+  }
 
   @override
   void initState() {
     super.initState();
+    _docTypes = _buildServiceDocTypes();
+    _selectedDocType = _docTypes.first['key']!;
     WidgetsBinding.instance.addPostFrameCallback((_) => _loadDocuments());
   }
 
   String _docTitle(String docType, bool isBn) {
-    final match = _docTypes.firstWhere(
-      (d) => d['key'] == docType,
-      orElse: () => _docTypes.last,
-    );
+    final match = _allDocTypeCatalog[docType] ?? _allDocTypeCatalog['OTHER']!;
     return isBn ? match['bn']! : match['en']!;
   }
 
@@ -116,7 +166,10 @@ class _DocumentUploadScreenState extends State<DocumentUploadScreen> {
       return;
     }
 
-    setState(() => _uploading = true);
+    setState(() {
+      _uploading = true;
+      _uploadingFileName = picked.name;
+    });
     try {
       final res = await auth.uploadDocument(
         requestId: widget.requestId,
@@ -132,22 +185,35 @@ class _DocumentUploadScreenState extends State<DocumentUploadScreen> {
         _uploadedFiles.add(doc);
         _readinessReport = null;
         _uploading = false;
+        _uploadingFileName = null;
       });
+
+      final ocrMap = doc['ocrData'] is Map
+          ? Map<String, dynamic>.from(doc['ocrData'] as Map)
+          : <String, dynamic>{};
+      final isReadable = ocrMap['isReadable'] != false;
 
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
-            isBn
-                ? 'ডকুমেন্ট S3 স্টোরেজে আপলোড ও OCR সম্পন্ন হয়েছে!'
-                : 'Document uploaded to S3 and OCR extracted successfully!',
+            isReadable
+                ? (isBn
+                    ? 'ডকুমেন্ট S3 স্টোরেজে আপলোড ও OCR সম্পন্ন হয়েছে!'
+                    : 'Document uploaded to S3 and OCR extracted successfully!')
+                : (isBn
+                    ? 'ফাইল আপলোড হয়েছে, তবে ছবিটি অস্পষ্ট। অনুগ্রহ করে আরও স্পষ্ট ছবি আপলোড করুন।'
+                    : 'Uploaded, but text is unclear. Please upload a clearer photo.'),
           ),
-          backgroundColor: const Color(0xFF006A4E),
-          duration: const Duration(seconds: 2),
+          backgroundColor: isReadable ? const Color(0xFF006A4E) : Colors.amber.shade800,
+          duration: const Duration(seconds: 3),
         ),
       );
     } catch (e) {
       if (!mounted) return;
-      setState(() => _uploading = false);
+      setState(() {
+        _uploading = false;
+        _uploadingFileName = null;
+      });
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
@@ -320,7 +386,7 @@ class _DocumentUploadScreenState extends State<DocumentUploadScreen> {
                     const Icon(Icons.cloud_upload_outlined, color: Color(0xFF006A4E), size: 20),
                     const SizedBox(width: 8),
                     Text(
-                      'FR11: ${s.chooseFile}',
+                      s.chooseFile,
                       style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
                     ),
                   ],
@@ -354,7 +420,24 @@ class _DocumentUploadScreenState extends State<DocumentUploadScreen> {
                           if (val != null) setState(() => _selectedDocType = val);
                         },
                 ),
-                const SizedBox(height: 14),
+                const SizedBox(height: 10),
+                CheckboxListTile(
+                  value: _consentGiven,
+                  onChanged: _uploading
+                      ? null
+                      : (val) => setState(() => _consentGiven = val ?? false),
+                  controlAffinity: ListTileControlAffinity.leading,
+                  contentPadding: EdgeInsets.zero,
+                  dense: true,
+                  activeColor: const Color(0xFF006A4E),
+                  title: Text(
+                    isBn
+                        ? 'আমি আমার নথি নিরাপদে সংরক্ষণ ও OCR যাচাইয়ের জন্য সম্মতি দিচ্ছি (আপনি যেকোনো সময় নথি মুছতে পারবেন)।'
+                        : 'I consent to securely storing and scanning my documents via OCR (you can delete them anytime).',
+                    style: TextStyle(fontSize: 11.5, color: Colors.grey.shade700, height: 1.3),
+                  ),
+                ),
+                const SizedBox(height: 10),
                 SizedBox(
                   width: double.infinity,
                   child: FilledButton.icon(
@@ -363,7 +446,7 @@ class _DocumentUploadScreenState extends State<DocumentUploadScreen> {
                       padding: const EdgeInsets.symmetric(vertical: 12),
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                     ),
-                    onPressed: _uploading ? null : _pickAndUploadDocument,
+                    onPressed: (_uploading || !_consentGiven) ? null : _pickAndUploadDocument,
                     icon: _uploading
                         ? const SizedBox(
                             width: 18,
@@ -378,6 +461,36 @@ class _DocumentUploadScreenState extends State<DocumentUploadScreen> {
                     ),
                   ),
                 ),
+                if (_uploading) ...[
+                  const SizedBox(height: 12),
+                  Container(
+                    padding: const EdgeInsets.all(10),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF006A4E).withValues(alpha: 0.06),
+                      borderRadius: BorderRadius.circular(10),
+                      border: Border.all(color: const Color(0xFF006A4E).withValues(alpha: 0.25)),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          isBn
+                              ? 'প্রক্রিয়াকরণ চলছে: ${_uploadingFileName ?? ''}'
+                              : 'Processing: ${_uploadingFileName ?? ''}',
+                          style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Color(0xFF006A4E)),
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          isBn
+                              ? '• S3 স্টোরেজে সংরক্ষণ ও OCR দিয়ে নাম, জন্ম তারিখ, আইডি নম্বর, পিতা/মাতার নাম এবং ঠিকানা পড়া হচ্ছে...'
+                              : '• Saving to S3 storage & extracting Name, DOB, ID Number, Parents & Address via OCR...',
+                          style: TextStyle(fontSize: 11.5, color: Colors.grey.shade700, height: 1.3),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
               ],
             ),
           ),
@@ -443,9 +556,6 @@ class _DocumentUploadScreenState extends State<DocumentUploadScreen> {
               final ocr = file['ocrData'] is Map
                   ? Map<String, dynamic>.from(file['ocrData'] as Map)
                   : <String, dynamic>{};
-              final ocrName = ocr['fullName']?.toString() ?? (isBn ? 'সনাক্ত করা যায়নি' : 'Not detected');
-              final ocrDob = ocr['dateOfBirth']?.toString() ?? 'N/A';
-              final ocrEngine = ocr['ocrEngine']?.toString() ?? 'ocr';
 
               return Card(
                 margin: const EdgeInsets.only(bottom: 10),
@@ -501,32 +611,8 @@ class _DocumentUploadScreenState extends State<DocumentUploadScreen> {
                         ],
                       ),
                       const SizedBox(height: 8),
-                      // FR12: OCR Extracted Fields Card
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                        decoration: BoxDecoration(
-                          color: Colors.grey.shade50,
-                          borderRadius: BorderRadius.circular(8),
-                          border: Border.all(color: Colors.grey.shade200),
-                        ),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Expanded(
-                              child: Text(
-                                'OCR ($ocrEngine): $ocrName',
-                                style: TextStyle(fontSize: 12, color: Colors.grey.shade800, fontWeight: FontWeight.w600),
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                            ),
-                            const SizedBox(width: 8),
-                            Text(
-                              'DOB: $ocrDob',
-                              style: TextStyle(fontSize: 11, color: Colors.grey.shade600),
-                            ),
-                          ],
-                        ),
-                      ),
+                      // FR12: Detailed OCR Extracted Fields Card
+                      _buildOcrDetailsBox(ocr, isBn),
                     ],
                   ),
                 ),
@@ -569,6 +655,153 @@ class _DocumentUploadScreenState extends State<DocumentUploadScreen> {
     );
   }
 
+  Widget _buildOcrDetailsBox(Map<String, dynamic> ocr, bool isBn) {
+    final ocrEngine = ocr['ocrEngine']?.toString() ?? 'ocr';
+    final confRaw = ocr['confidence'];
+    final confPct = confRaw is num ? '${(confRaw * 100).round()}%' : null;
+
+    final nameEn = ocr['fullNameEn']?.toString() ?? ocr['fullName']?.toString();
+    final nameBn = ocr['fullNameBn']?.toString();
+    final dob = ocr['dateOfBirth']?.toString();
+    final docNo = ocr['documentNumber']?.toString();
+    final father = ocr['fatherName']?.toString();
+    final mother = ocr['motherName']?.toString();
+    final address = ocr['address']?.toString();
+    final rawText = ocr['rawText']?.toString() ?? '';
+    final isReadable = ocr['isReadable'] != false;
+
+    final rows = <MapEntry<String, String>>[];
+    if (nameEn != null && nameEn.isNotEmpty) {
+      rows.add(MapEntry(isBn ? 'নাম (EN)' : 'Name (EN)', nameEn));
+    }
+    if (nameBn != null && nameBn.isNotEmpty && nameBn != nameEn) {
+      rows.add(MapEntry(isBn ? 'নাম (BN)' : 'Name (BN)', nameBn));
+    }
+    if (dob != null && dob.isNotEmpty) {
+      rows.add(MapEntry(isBn ? 'জন্ম তারিখ' : 'Date of Birth', dob));
+    }
+    if (docNo != null && docNo.isNotEmpty) {
+      rows.add(MapEntry(isBn ? 'ডকুমেন্ট নম্বর' : 'Document No.', docNo));
+    }
+    if (father != null && father.isNotEmpty) {
+      rows.add(MapEntry(isBn ? 'পিতার নাম' : "Father's Name", father));
+    }
+    if (mother != null && mother.isNotEmpty) {
+      rows.add(MapEntry(isBn ? 'মাতার নাম' : "Mother's Name", mother));
+    }
+    if (address != null && address.isNotEmpty) {
+      rows.add(MapEntry(isBn ? 'ঠিকানা' : 'Address', address));
+    }
+
+    return Container(
+      padding: const EdgeInsets.all(10),
+      decoration: BoxDecoration(
+        color: Colors.grey.shade50,
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: Colors.grey.shade200),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                isBn ? 'OCR থেকে প্রাপ্ত তথ্য' : 'OCR Extracted Info',
+                style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.bold, color: Colors.grey.shade800),
+              ),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF006A4E).withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(6),
+                ),
+                child: Text(
+                  confPct != null ? '$ocrEngine • $confPct' : ocrEngine,
+                  style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w600, color: Color(0xFF006A4E)),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 6),
+          if (!isReadable)
+            Container(
+              margin: const EdgeInsets.only(bottom: 6),
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: Colors.amber.shade50,
+                borderRadius: BorderRadius.circular(6),
+                border: Border.all(color: Colors.amber.shade300),
+              ),
+              child: Text(
+                isBn
+                    ? '⚠️ ছবিটি অস্পষ্ট বা পঠনযোগ্য নয়। অনুগ্রহ করে এই নথিটি মুছে আরও স্পষ্ট ছবি আপলোড করুন।'
+                    : '⚠️ This document looks blurry or unreadable. Please delete it and upload a clearer photo.',
+                style: TextStyle(fontSize: 11.5, color: Colors.amber.shade900, fontWeight: FontWeight.w600),
+              ),
+            ),
+          if (rows.isEmpty)
+            Text(
+              isBn ? 'কোনো টেক্সট/তথ্য সনাক্ত করা যায়নি।' : 'No structured text fields detected.',
+              style: TextStyle(fontSize: 11.5, color: Colors.grey.shade600),
+            )
+          else
+            ...rows.map(
+              (r) => Padding(
+                padding: const EdgeInsets.only(bottom: 3),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    SizedBox(
+                      width: 105,
+                      child: Text(
+                        '${r.key}:',
+                        style: TextStyle(fontSize: 11.5, color: Colors.grey.shade600, fontWeight: FontWeight.w500),
+                      ),
+                    ),
+                    Expanded(
+                      child: Text(
+                        r.value,
+                        style: TextStyle(fontSize: 11.5, color: Colors.grey.shade900, fontWeight: FontWeight.w600),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          if (rawText.trim().isNotEmpty)
+            Theme(
+              data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
+              child: ExpansionTile(
+                tilePadding: EdgeInsets.zero,
+                childrenPadding: const EdgeInsets.only(top: 4),
+                dense: true,
+                title: Text(
+                  isBn ? 'সম্পূর্ণ OCR টেক্সট দেখুন' : 'View full extracted OCR text',
+                  style: TextStyle(fontSize: 11, color: Colors.grey.shade700, fontWeight: FontWeight.w600),
+                ),
+                children: [
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(6),
+                      border: Border.all(color: Colors.grey.shade200),
+                    ),
+                    child: Text(
+                      rawText,
+                      style: TextStyle(fontSize: 11, color: Colors.grey.shade700, height: 1.3),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildReadinessReportCard(bool isBn, Map<String, dynamic> report) {
     final s = context.read<AuthProvider>().s;
     final isReady = report['isReady'] == true;
@@ -591,7 +824,7 @@ class _DocumentUploadScreenState extends State<DocumentUploadScreen> {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
-                isBn ? 'রেডিনেস রিপোর্ট (FR15)' : 'Readiness Report (FR15)',
+                isBn ? 'রেডিনেস রিপোর্ট' : 'Readiness Report',
                 style: TextStyle(
                   fontWeight: FontWeight.bold,
                   fontSize: 15,
@@ -619,7 +852,7 @@ class _DocumentUploadScreenState extends State<DocumentUploadScreen> {
 
           // FR13: Missing Document Detection
           Text(
-            isBn ? '১. অনুপস্থিত ডকুমেন্টস (FR13):' : '1. Missing Documents (FR13):',
+            isBn ? '১. অনুপস্থিত ডকুমেন্টস:' : '1. Missing Documents:',
             style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
           ),
           const SizedBox(height: 4),
@@ -643,7 +876,7 @@ class _DocumentUploadScreenState extends State<DocumentUploadScreen> {
 
           // FR14: Document Mismatch Detection
           Text(
-            isBn ? '২. তথ্যের গরমিল ও অসঙ্গতি (FR14):' : '2. Information Mismatch (FR14):',
+            isBn ? '২. তথ্যের গরমিল ও অসঙ্গতি:' : '2. Information Mismatch:',
             style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
           ),
           const SizedBox(height: 4),

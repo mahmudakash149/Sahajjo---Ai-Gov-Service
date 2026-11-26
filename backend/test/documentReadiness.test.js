@@ -1,7 +1,7 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
 const { evaluateReadiness } = require('../src/services/readinessService');
-const { parseBasicFieldsFromText } = require('../src/services/ocrService');
+const { parseBasicFieldsFromText, computeReadability } = require('../src/services/ocrService');
 
 test('evaluateReadiness detects missing documents and name mismatches (FR13-FR15)', () => {
   const report = evaluateReadiness({
@@ -29,17 +29,17 @@ test('evaluateReadiness detects missing documents and name mismatches (FR13-FR15
   assert.equal(report.mismatches[0].field, 'fullName');
 });
 
-test('evaluateReadiness returns ready when all required docs match', () => {
+test('evaluateReadiness returns ready when all required docs match across Bangla/English and DD-MM-YYYY', () => {
   const report = evaluateReadiness({
     requiredDocuments: ['National ID (NID)', 'Online Birth Certificate'],
     uploadedDocs: [
       {
         docType: 'NID',
-        ocrData: { fullName: 'Md. Akash Mahmud', dateOfBirth: '1998-05-12' },
+        ocrData: { fullName: 'Mahmud Akash', fullNameEn: 'Mahmud Akash', dateOfBirth: '2001-01-01' },
       },
       {
         docType: 'BIRTH_CERT',
-        ocrData: { fullName: 'Md. Akash Mahmud', dateOfBirth: '1998-05-12' },
+        ocrData: { fullName: 'মাহমুদ আকাশ', fullNameBn: 'মাহমুদ আকাশ', dateOfBirth: '01-01-2001' },
       },
     ],
   });
@@ -50,9 +50,35 @@ test('evaluateReadiness returns ready when all required docs match', () => {
   assert.equal(report.mismatches.length, 0);
 });
 
-test('parseBasicFieldsFromText extracts name, DOB, and 10/17-digit ID', () => {
+test('evaluateReadiness matches PHOTO and CHALLAN against passport-size photo and receipt requirements', () => {
+  const report = evaluateReadiness({
+    requiredDocuments: [
+      'National ID / Birth Certificate',
+      'Passport size photographs',
+      'Payment receipt/challan',
+    ],
+    uploadedDocs: [
+      { docType: 'NID', ocrData: { fullNameEn: 'Mahmud Akash', dateOfBirth: '2001-01-01' } },
+      { docType: 'PHOTO', ocrData: {} },
+      { docType: 'CHALLAN', ocrData: {} },
+    ],
+  });
+
+  assert.equal(report.isReady, true);
+  assert.equal(report.missingDocuments.length, 0);
+  assert.equal(report.mismatches.length, 0);
+});
+
+test('computeReadiness flags unreadable text-bearing docs but allows PHOTO', () => {
+  assert.equal(computeReadability({ ocrEngine: 'unavailable', rawText: '' }, 'NID'), false);
+  assert.equal(computeReadability({ ocrEngine: 'tesseract', confidence: 0.25, rawText: 'blur' }, 'NID'), false);
+  assert.equal(computeReadability({ ocrEngine: 'gemini-vision', fullName: 'Mahmud Akash' }, 'NID'), true);
+  assert.equal(computeReadability({ ocrEngine: 'unavailable', rawText: '' }, 'PHOTO'), true);
+});
+
+test('parseBasicFieldsFromText extracts name, DOB (ignoring Issue Date), and 10/17-digit ID', () => {
   const fields = parseBasicFieldsFromText(
-    'Government of Bangladesh\nName: Md. Akash Mahmud\nDate of Birth: 1998-05-12\nNID No: 1234567890'
+    'Government of Bangladesh\nDate of Issue: 15-02-2021\nName: Md. Akash Mahmud\nDate of Birth: 1998-05-12\nNID No: 1234567890'
   );
   assert.equal(fields.fullName, 'Md. Akash Mahmud');
   assert.equal(fields.dateOfBirth, '1998-05-12');
